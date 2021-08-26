@@ -1,0 +1,34 @@
+{
+    "extends": ["next","eslint:recommended","plugin:react/recommended"],
+    "settings": {
+      "react": {
+        "createClass": "createReactClass",
+                                          
+        "pragma": "React"  
+      }
+    },
+    "env": {
+      "browser": true,
+      "node": true,
+      "es6": true
+    },
+    "plugins": [
+      "react"
+    ],
+    "parserOptions": {
+      
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "jsx": true
+      }
+    },
+    "rules": {
+      "indent":["warn",2],
+      "no-undef":"warn",
+      "no-unused-vars":"warn",
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-page-custom-font": "off",
+      "react/prop-types":0,
+      "react/display-name":0
+    }
+  }

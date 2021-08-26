@@ -1,3 +1,5 @@
+import React from 'react'
+
 import Head from 'next/head'
 import { parseCookies, setCookie, destroyCookie } from 'nookies'
 
@@ -63,7 +65,7 @@ export async function getServerSideProps(ctx) {
   } else {
     shouldGenerateSession = true;
   }
-    let token;
+  let token;
 
   if (shouldGenerateSession) {
     if (query.request_token) {
