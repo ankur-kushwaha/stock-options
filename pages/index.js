@@ -67,6 +67,7 @@ export async function getServerSideProps(ctx) {
   } else {
     shouldGenerateSession = true;
   }
+  let token;
 
   if (shouldGenerateSession) {
     if (query.request_token) {
@@ -75,7 +76,7 @@ export async function getServerSideProps(ctx) {
         maxAge: 30 * 24 * 60 * 60,
         path: '/',
       })
-      res.status(200).json({ status: 'success', accessToken })
+      token = accessToken
     } else {
       redirectKiteLogin(res);
     }
@@ -83,7 +84,7 @@ export async function getServerSideProps(ctx) {
 
   return {
     props: {
-      token: ""
+      token
     }
   }
 
