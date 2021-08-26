@@ -4,7 +4,7 @@ import { getKiteClient } from "../../helpers/kiteConnect";
 export default async function createOrder(req, res) {
 
 
-        console.log(req.cookies);
+        
         let kt = await getKiteClient(req.cookies);
 
         let {tradingsymbol,quantity,price,transactionType} = req.query;

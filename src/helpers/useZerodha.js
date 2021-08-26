@@ -6,7 +6,17 @@ export default function useZerodha(){
     window.open(`/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}`, "_blank");
   }
 
+  function login(){
+
+  }
+
+  function logout(){
+    return fetch('/api/logout')
+  }
+
   return {
-    createOrder
+    createOrder,
+    login,
+    logout
   }
 }

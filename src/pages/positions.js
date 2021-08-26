@@ -3,8 +3,9 @@ import io from 'socket.io-client'
 import Header from '../components/Header';
 import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
+import { getKiteClient } from '../helpers/kiteConnect';
 
-export default function holdings() {
+export default function holdings({userProfile}) {
 
   const {createOrder} = useZerodha();
 
@@ -237,14 +238,30 @@ export default function holdings() {
   ]
 
   return (
-    <>
-      <Header></Header>
-      <div>
+    <div >
+      <Header userProfile={userProfile} tab="positions"></Header>
+      <div className="container">
         <Table title={"Open Positions"} data={data} columns={columns} />
       </div>
       <footer>
           Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{totalProfit}</span>
       </footer>
-    </>
+    </div>
   )
+}
+
+export async function getServerSideProps(ctx) {
+  let { req, res, query } = ctx;
+  let userProfile = {};
+  try{
+  let kt = await getKiteClient(req.cookies);
+  userProfile = await kt.getProfile()
+  }catch(e){
+    console.log(e)
+  }
+  return {
+    props:{
+      userProfile
+    }
+  }
 }

@@ -1,7 +1,6 @@
 var KiteConnect = require("kiteconnect").KiteConnect;
 var KiteTicker = require("kiteconnect").KiteTicker;
 var cookie = require("cookie");
-const { parseCookies, setCookie } = require('nookies');
 
 let API_KEY = 'ab8oz67ryftv7gx9'
 

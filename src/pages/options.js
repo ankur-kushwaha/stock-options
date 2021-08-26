@@ -275,7 +275,7 @@ export default function socketIO() {
 
 
   return <>
-    <Header></Header>
+    <Header tab="options"></Header>
     <div>
     
 

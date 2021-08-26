@@ -6,20 +6,18 @@ import styles from '../styles/Home.module.css'
 import KiteConnect from 'kiteconnect';
 import { postData } from '../helpers';
 import { getKiteClient } from '../helpers/kiteConnect';
-
+import Header from '../components/Header';
 let API_KEY = 'ab8oz67ryftv7gx9'
 
 var kc = new KiteConnect.KiteConnect({
   api_key: API_KEY
 });
 
-export default function Home({ token }) {
-  3
-
+export default function Home({ userProfile }) {
+  console.log('userProfile',userProfile);
   return (
-    <div className={styles.container}>
-      Homepage
-
+    <div>
+      <Header userProfile={userProfile}></Header>
     </div>
   )
 }
@@ -46,28 +44,26 @@ async function generateAccessToken(requestToken) {
     console.log(e)
     throw new Error("Failed to generate accessToken");
   }
-
-
 }
 
 export async function getServerSideProps(ctx) {
   let { req, res, query } = ctx;
 
-  const cookies = parseCookies(ctx);
+  const cookies = req.cookies
+  let userProfile={};
 
   let shouldGenerateSession = false;
   if (cookies.accessToken) {
     try {
       let kt = await getKiteClient(req.cookies);
-      let res = await kt.getQuote(["NSE:INFY"])
-      res.status(200).json({ status: 'success', res })
+      userProfile = await kt.getProfile()
     } catch (e) {
       shouldGenerateSession = true;
     }
   } else {
     shouldGenerateSession = true;
   }
-  let token;
+    let token;
 
   if (shouldGenerateSession) {
     if (query.request_token) {
@@ -78,13 +74,13 @@ export async function getServerSideProps(ctx) {
       })
       token = accessToken
     } else {
-      redirectKiteLogin(res);
+      //redirectKiteLogin(res);
     }
   }
 
   return {
     props: {
-      token
+      userProfile
     }
   }
 
