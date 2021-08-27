@@ -1,3 +1,5 @@
+import React from 'react'
+
 import useTicker from '../helpers/useTicker';
 
 export default function Test(){

@@ -72,7 +72,7 @@ export default function socketIO() {
     <section className="hero">
       <div className="hero-body">
      
-      <div className=" is-pulled-right is-small">
+        <div className=" is-pulled-right is-small">
           Expiry:
           <div className="select is-small" >
             <select value={params.expiry} onChange={handleChange}>
@@ -87,7 +87,7 @@ export default function socketIO() {
           Stock:
           <div className="select is-small" >
             <select value={params.tradingsymbol} onChange={handleSymbolChange}>
-              {tradingsymbols.map(symbol=><option>{symbol}</option>)}
+              {tradingsymbols.map(symbol=><option key={symbol}>{symbol}</option>)}
             </select>
           </div>
         </div>  
