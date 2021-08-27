@@ -13,7 +13,7 @@ const nextApp = next({ dev });
 const nextHandler = nextApp.getRequestHandler();
 
 
-let port = 3000;
+let port = process.env.PORT || 3000;
 
 const io = require('socket.io')(server);
 io.on('connect', async function (socket) {
