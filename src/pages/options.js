@@ -101,28 +101,30 @@ export default function socketIO() {
       let stockPrice = newStocks[stockCode].price;
       let best = {
         stockCode,
-        ratio:Number.POSITIVE_INFINITY,
+        breakevenChg:Number.POSITIVE_INFINITY,
         timeValue: 1000
       }
       let secondbest;
 
       for (let option of Object.values(newOptionsData[stockCode])) {
         let optionPrice = option.depth.sell[0].price;
-        let timeValue = (option.strike + optionPrice - stockPrice);
-        let diffRatio = timeValue*100/optionPrice;
-        let returnRatio = stockPrice/optionPrice;
+        
+        
+        
+        let breakeven = option.strike + optionPrice;
+        let timeValue = breakeven - stockPrice;
 
-        let ratio = timeValue*100/stockPrice;
+        let breakevenChg = timeValue*100/stockPrice;
 
-        if (ratio < best.ratio) {
+        
+        if (breakevenChg < best.breakevenChg) {
           secondbest = best;
           best = {
-            diffRatio,
-            returnRatio,
-            ratio,
             stockPrice,
             stockCode,
             timeValue,
+            breakevenChg,
+            breakeven,
             option
           }
         }
@@ -150,10 +152,9 @@ export default function socketIO() {
   }
 
   let tableData = state.bestOptions.map(item => {
-    if (!item.option) {
-      console.log(123, state.bestOptions)
-    }
+  
     let timeValue = Number(item.timeValue.toFixed(2))
+
     let price = (item.option.depth.sell[0].price).toFixed(2)
     return {
       stockCode: item.stockCode,
@@ -164,13 +165,12 @@ export default function socketIO() {
       lotSize: item.option.lotSize,
       timeValue,
       price,
-      diffRatio:item.diffRatio,
-      returnRatio:item.returnRatio,
-      ratio:item.ratio,
+      breakeven:item.breakeven,
+      breakevenChg:item.breakevenChg,
       bidPrice: (item.option.depth.buy[0].price).toFixed(2),
       investment: (item.option.lotSize * item.option.depth.sell[0].price).toFixed(2)
     }
-  }).sort((a,b)=>a.timeValue-b.timeValue);
+  }).sort((a,b)=>a.breakevenChg-b.breakevenChg);
 
   const handleClick = (item, type) => () => {
     let price = item.price, transactionType = 'BUY';
@@ -188,17 +188,6 @@ export default function socketIO() {
   const columns = [
 
     {
-      name: 'stockCode',
-      selector: 'stockCode',
-      sortable: true,
-      cell: row => <a target="_blank" href={"/socketio?tradingsymbol=" + row.stockCode + "&expiry=" + row.expiry} rel="noreferrer">{row.stockCode}</a>,
-      grow: 1
-    },{
-      name: 'stockPrice',
-      selector: 'stockPrice',
-      sortable: true,
-      grow: 0
-    }, {
       name: 'tradingsymbol',
       selector: 'tradingsymbol',
       sortable: true,
@@ -230,29 +219,37 @@ export default function socketIO() {
       grow: 0
     },
     {
-      name: 'TimeValue',
+      name: 'stockCode',
+      selector: 'stockCode',
+      sortable: true,
+      cell: row => <a target="_blank" href={"/socketio?tradingsymbol=" + row.stockCode + "&expiry=" + row.expiry} rel="noreferrer">{row.stockCode} ({row.stockPrice})</a>,
+      grow: 1
+    },
+    {
+      name: 'Breakeven',
       selector: 'timeValue',
       sortable: true,
-      grow: 0
+      grow: 1,
+      cell:row=><div>
+      {row.breakeven} ({row.timeValue})
+      </div>
     },
     {
-      name: 'TV/OP',
-      selector: 'diffRatio',
+      name: 'TimeLoss',
+      selector: 'timeValue',
+      sortable: true,
+      grow: 1,
+      cell:row=><div>
+      {row.timeValue * row.lotSize }
+      </div>
+    },
+    {
+      name: 'breakevenChg',
+      selector: 'breakevenChg',
       sortable: true,
       grow: 0
     },
-    {
-      name: 'SP/OP',
-      selector: 'returnRatio',
-      sortable: true,
-      grow: 0
-    },
-    {
-      name: 'TV/SP',
-      selector: 'ratio',
-      sortable: true,
-      grow: 0
-    },
+    
     {
       name: "BUY/SELL",
       cell: item => (<div style={{ whiteSpace: "nowrap" }}>

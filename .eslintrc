@@ -1,5 +1,6 @@
 {
-    "extends": ["next","eslint:recommended","plugin:react/recommended"],
+    "extends": ["eslint:recommended","plugin:react/recommended"],
+    "parser": "@babel/eslint-parser",
     "settings": {
       "react": {
         "createClass": "createReactClass",

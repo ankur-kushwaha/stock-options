@@ -34,8 +34,6 @@ export default function holdings({userProfile}) {
  
 
   async function getQuotes(tradingSymbols){
-    // http://localhost:3000/api/getQuote?instruments=HINDALCO21SEP390CE
-    
     return fetch('/api/getQuote?instruments='+tradingSymbols)
       .then(res=>res.json())
       .then(res=>res.quotes)
@@ -131,7 +129,7 @@ export default function holdings({userProfile}) {
 
     let bidPrice = optionDepth.buy[0].price
     let offerPrice = optionDepth.sell[0].price;
-    let currValue = item.quantity*bidPrice
+    let currValue = Number((item.quantity*bidPrice).toFixed(2))
     let pnl = currValue - item.buy_value;
     totalProfit+=pnl;
     
@@ -172,16 +170,16 @@ export default function holdings({userProfile}) {
     {
       name: 'stockPrice',
       selector: 'stockPriceChg',
-      wrap:true,
+      
       sortable: true,
-      cell:row=><>{row.stockPrice}<span className={row.stockPriceChg>0?'has-text-success':'has-text-danger'}>&nbsp;({row.stockPriceChg})</span></>
+      cell:row=><div>{row.stockPrice}<br/><span className={row.stockPriceChg>0?'has-text-success':'has-text-danger'}>&nbsp;({row.stockPriceChg})</span></div>
     },
     {
       name: 'breakeven',
       selector: 'breakevenChg',
       wrap:true,
       sortable: true,
-      cell:row=><>{row.breakeven} <span className={row.breakevenChg>0?'has-text-success':'has-text-danger'}>&nbsp;({row.breakevenChg})</span></>
+      cell:row=><div>{row.breakeven}<br/> <span className={row.breakevenChg>0?'has-text-success':'has-text-danger'}>&nbsp;({row.breakevenChg})</span></div>
     },
     {
       name: 'quantity',
@@ -195,7 +193,8 @@ export default function holdings({userProfile}) {
       sortable: true
     },
     {
-      name: 'currValue',wrap:true,
+      name: 'currValue',
+      wrap:true,
       selector: 'currValue',
       sortable: true,
     },
@@ -203,12 +202,12 @@ export default function holdings({userProfile}) {
       name: 'bidPrice',
       selector: 'bidPrice',wrap:true,
       sortable: true,
-      cell:row=><>
+      cell:row=><div>
         <a onClick={createOrder({
           transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.bidPrice)
-        })}>{row.bidPrice}</a> &nbsp;
+        })}>{row.bidPrice}</a> <br/>
         (
-        <span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</>
+        <span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
     },
     {
       name: 'buyPrice',wrap:true,
@@ -219,20 +218,20 @@ export default function holdings({userProfile}) {
       name: 'offerPrice',
       selector: 'offerPrice',wrap:true,
       sortable: true,
-      cell:row=><><a onClick={createOrder({
+      cell:row=><div><a onClick={createOrder({
         transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.offerPrice-0.5)
-      })}>{row.offerPrice}</a> &nbsp; 
+      })}>{row.offerPrice}</a>  <br/>
       (<span className={"is-size-7 "+(row.offerPrice>row.buyPrice?'has-text-success':'has-text-danger')}>
-        {((row.offerPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</>
+        {((row.offerPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
     },
     {
       name: 'P&L',
       selector: 'pnl',
       sortable: true,wrap:true,
-      cell:row=><>
-        {row.pnl}&nbsp;
+      cell:row=><div>
+        {row.pnl}<br/>
         (<span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>
-          {(row.pnl*100/row.buyValue).toFixed(2)}%</span>)</>
+          {(row.pnl*100/row.buyValue).toFixed(2)}%</span>)</div>
     }, 
 
   ]
@@ -242,10 +241,11 @@ export default function holdings({userProfile}) {
       <Header userProfile={userProfile} tab="positions"></Header>
       <div className="container">
         <Table title={"Open Positions"} data={data} columns={columns} />
-      </div>
-      <footer>
+        <footer>
           Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{totalProfit}</span>
       </footer>
+      </div>
+      
     </div>
   )
 }

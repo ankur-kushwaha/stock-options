@@ -46,7 +46,7 @@ export default function Header({ userProfile={},tab }) {
               <div className="navbar-brand">
                 <a className="navbar-item">
                   
-                  <h1 class="title">Smart Options</h1>
+                  <h1 className="title">Smart Options</h1>
                 </a>
                 <span className="navbar-burger" data-target="navbarMenuHeroC">
                   <span></span>

@@ -3,8 +3,8 @@ const server = require('http').Server(app);
 
 const next = require('next');
 
-const { fetchOptions,fetchStock,fetchStocks} = require('./helpers/dbHelper');
-const { getKiteTickerClient } = require('./helpers/kiteConnect');
+const { fetchOptions,fetchStock,fetchStocks} = require('./src/helpers/dbHelper');
+const { getKiteTickerClient } = require('./src/helpers/kiteConnect');
 
 const mongoose = require('mongoose');
 
