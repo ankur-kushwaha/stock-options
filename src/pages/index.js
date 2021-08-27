@@ -24,12 +24,6 @@ export default function Home({ userProfile }) {
   )
 }
 
-function redirectKiteLogin(res) {
-  
-  res.writeHead(301, { Location: "https://kite.zerodha.com/connect/login?v=3&api_key=" + API_KEY })
-  res.end()
-}
-
 async function generateAccessToken(requestToken) {
   console.log("Generating session from requesttoken", requestToken)
   try {
@@ -63,11 +57,10 @@ export async function getServerSideProps(ctx) {
 
   const cookies = req.cookies
   let userProfile={};
-
+  let kt = await getKiteClient(req.cookies);
   let shouldGenerateSession = false;
   if (cookies.accessToken) {
     try {
-      let kt = await getKiteClient(req.cookies);
       userProfile = await kt.getProfile()
     } catch (e) {
       shouldGenerateSession = true;
@@ -75,7 +68,7 @@ export async function getServerSideProps(ctx) {
   } else {
     shouldGenerateSession = true;
   }
-  let token;
+  
 
   if (shouldGenerateSession) {
     if (query.request_token) {
@@ -84,7 +77,10 @@ export async function getServerSideProps(ctx) {
         maxAge: 30 * 24 * 60 * 60,
         path: '/',
       })
-      token = accessToken
+      kt = await getKiteClient({
+        accessToken
+      });
+      userProfile = await kt.getProfile()
     } else {
       //redirectKiteLogin(res);
     }

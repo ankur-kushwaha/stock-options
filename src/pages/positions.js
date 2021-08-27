@@ -4,6 +4,8 @@ import Header from '../components/Header';
 import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
 import { getKiteClient } from '../helpers/kiteConnect';
+import currencyFormatter from 'currency-formatter';
+
 
 export default function holdings({userProfile}) {
 
@@ -107,7 +109,7 @@ export default function holdings({userProfile}) {
     return <></>
   }
 
-  let totalProfit = 0;
+  let totalProfit = 0,totalInvestment=0,netCurrentValue=0,netExpiryPnl=0;
   let data = state.positions.map(item => {
     let optionDepth,stockPrice,stockPriceChg
 
@@ -124,17 +126,22 @@ export default function holdings({userProfile}) {
     const regex = /([A-Z]*)+(\w{5})(\d*)CE/;
     let strike = Number(item.tradingsymbol.match(regex)[3]);
     let breakeven = strike+item.buy_price;
-    let breakevenChg = ((stockPrice-breakeven)*100/stockPrice).toFixed(2)
-      
+    let intrinsicValue = stockPrice-breakeven;
+    let breakevenChg = ((intrinsicValue)*100/stockPrice).toFixed(2)
+    let expiryPnL = intrinsicValue*item.quantity;
 
     let bidPrice = optionDepth.buy[0].price
     let offerPrice = optionDepth.sell[0].price;
     let currValue = Number((item.quantity*bidPrice).toFixed(2))
     let pnl = currValue - item.buy_value;
     totalProfit+=pnl;
+    totalInvestment += item.buy_value;
+    netCurrentValue += currValue;
+    netExpiryPnl += expiryPnL;
     
     // price,tradingsymbol,lotSize,buyPrice,sellPrice
     return {
+      expiryPnL,
       breakeven,
       breakevenChg,
       stockCode:item.stockCode,
@@ -233,6 +240,15 @@ export default function holdings({userProfile}) {
         (<span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>
           {(row.pnl*100/row.buyValue).toFixed(2)}%</span>)</div>
     }, 
+    {
+      name: 'expiryPnL',
+      selector: 'expiryPnL',
+      sortable: true,wrap:true,
+      cell:row=><div>
+        <span className={(row.expiryPnL>0?'has-text-success':'has-text-danger')}>
+          {row.expiryPnL.toFixed(2)}</span></div>
+    }, 
+    
 
   ]
 
@@ -242,9 +258,22 @@ export default function holdings({userProfile}) {
       <div className="container">
         <Table title={"Open Positions"} data={data} columns={columns} />
         <footer>
-          Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{totalProfit}</span>
-      </footer>
-      </div>
+          
+          <div>
+          Net Investment: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalInvestment, { code: 'INR' })}</span>
+          </div>
+          <div>
+          Current Value: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netCurrentValue, { code: 'INR' })}</span>
+          </div>
+          <div>
+          Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalProfit, { code: 'INR' })}</span>
+          </div>
+          <div>
+          Net PnL (Expiry): <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netExpiryPnl, { code: 'INR' })}</span>
+          
+          </div>
+        </footer>
+      </div> 
       
     </div>
   )
@@ -254,8 +283,8 @@ export async function getServerSideProps(ctx) {
   let { req, res, query } = ctx;
   let userProfile = {};
   try{
-  let kt = await getKiteClient(req.cookies);
-  userProfile = await kt.getProfile()
+    let kt = await getKiteClient(req.cookies);
+    userProfile = await kt.getProfile()
   }catch(e){
     console.log(e)
   }

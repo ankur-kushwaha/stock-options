@@ -1,44 +1,28 @@
 import React from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
+
+
 import useZerodha from '../helpers/useZerodha';
 
 export default function Header({ userProfile={},tab }) {
   let { user_name } = userProfile;
+  const router = useRouter()
+  let [state,setState] = React.useState({})
+  tab = router.pathname.substring(1)
 
-  let { login, logout } = useZerodha();
+  function toggleMenu(){
+    setState({
+      isMenuOpen:!state.isMenuOpen
+    })
+  }
 
   return (
 
     <div>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" />
-      {/* <nav className="navbar" role="navigation" aria-label="main navigation">
-        <div className="navbar-brand">
-          <a className="navbar-item" href="https://bulma.io">
-            <b>Smart Options</b>
-          </a>
 
-          <a role="button" className="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-          </a>
-        </div>
-
-        <div id="navbarBasicExample" className="navbar-menu">
-          <div className="navbar-start">
-            <a className="navbar-item" href="/socketio2">
-        Options
-            </a>
-
-            <a className="navbar-item" href="/positions">
-        Positions
-            </a>
-
-            
-          </div></div>
-      </nav>
-    </div> */}
-
-      <section className="hero is-success">
+      <section className="hero is-link">
 
         <div className="hero-head">
           <header className="navbar">
@@ -48,13 +32,13 @@ export default function Header({ userProfile={},tab }) {
                   
                   <h1 className="title">Smart Options</h1>
                 </a>
-                <span className="navbar-burger" data-target="navbarMenuHeroC">
+                <span className="navbar-burger" data-target="navbarMenuHeroC" onClick={toggleMenu}>
                   <span></span>
                   <span></span>
                   <span></span>
                 </span>
               </div>
-              <div id="navbarMenuHeroC" className="navbar-menu">
+              <div id="navbarMenuHeroC" className={"navbar-menu "+(state.isMenuOpen?"is-active":"")}>
                 <div className="navbar-end">
                   {user_name &&
                     <a className="navbar-item is-active">
@@ -63,13 +47,13 @@ export default function Header({ userProfile={},tab }) {
                   }
                   <span className="navbar-item">
                     {user_name ?
-                      <a className="button is-success is-inverted" href='/api/logout'>
+                      <a className="button is-link is-inverted" href='/api/logout'>
                         <span className="icon">
                           <i className="fab fa-github"></i>
                         </span>
                         <span>Logout</span>
                       </a> :
-                      <a className="button is-success is-inverted" href='/api/login'>
+                      <a className="button is-link is-inverted" href='/api/login'>
                         <span className="icon">
                           <i className="fab fa-github"></i>
                         </span>
@@ -95,8 +79,9 @@ export default function Header({ userProfile={},tab }) {
           <nav className="tabs is-boxed is-fullwidth">
             <div className="container">
               <ul>
-                <li className={tab=='positions'?"is-active":""}><a href="/positions">Positions</a></li>
-                <li className={tab=='options'?"is-active":""}><a href="/options">Options</a></li>
+                <li className={tab=='positions'?"is-active":""}> <Link href="/positions"><a >Positions</a></Link></li>
+                <li className={tab=='options'?"is-active":""}> <Link href="/options"><a>Options</a></Link></li>
+                <li className={tab=='holdings'?"is-active":""}><Link href="/holdings"><a>Holdings</a></Link></li>
               </ul>
             </div>
           </nav>
