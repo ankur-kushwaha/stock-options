@@ -52,7 +52,7 @@ async function generateAccessToken(requestToken) {
 export async function getServerSideProps(ctx) {
   let { req, res, query } = ctx;
   let host = req.get( 'host');
-  
+  console.log(req.query.host , host)
   if(req.query.host != host){
     let request_token = req.query.request_token;
     if(host.search('localhost') >= 0){
