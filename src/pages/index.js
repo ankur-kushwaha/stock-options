@@ -25,6 +25,7 @@ export default function Home({ userProfile }) {
 }
 
 function redirectKiteLogin(res) {
+  
   res.writeHead(301, { Location: "https://kite.zerodha.com/connect/login?v=3&api_key=" + API_KEY })
   res.end()
 }
@@ -50,6 +51,15 @@ async function generateAccessToken(requestToken) {
 
 export async function getServerSideProps(ctx) {
   let { req, res, query } = ctx;
+  let host = req.get( 'host');
+  
+  if(req.query.host != host){
+    let request_token = req.query.request_token;
+    if(host.search('localhost') == -1){
+      res.writeHead(301, { Location: `http://${host}?request_token=${request_token}`});
+      res.end()
+    }
+  }
 
   const cookies = req.cookies
   let userProfile={};
