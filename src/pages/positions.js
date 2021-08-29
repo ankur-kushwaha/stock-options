@@ -216,11 +216,22 @@ function getStockCode(tradingsymbol){
 }
 
 export async function getServerSideProps(ctx) {
-  let { req } = ctx;
-  let userProfile = {},positions={},quotes=[];
+  let { req,res } = ctx;
+  let userProfile,positions={},quotes=[];
+  let kc
   try{
-    let kc = await getKiteClient(req.cookies);
+    kc = await getKiteClient(req.cookies);
     userProfile = await kc.getProfile();
+  }catch(e){
+    console.log('error')
+  }
+  
+  if(!userProfile){
+    res.writeHead(301, { Location: `/api/login`})
+    res.end()
+  }
+
+  try{
     positions = await kc.getPositions();
     
     
@@ -239,6 +250,7 @@ export async function getServerSideProps(ctx) {
   } catch(e) {
     console.log(e)
   }
+
 
   return {
     props:{
