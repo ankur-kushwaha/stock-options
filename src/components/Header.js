@@ -76,9 +76,9 @@ export default function Header({ userProfile={},tab}) {
           <nav className="tabs is-boxed">
             <div className="container">
               <ul>
-                <li className={tab=='positions'?"is-active":""}> <Link href="/positions"><a >Positions</a></Link></li>
-                <li className={tab=='options2'?"is-active":""}> <Link href="/options2"><a>Options</a></Link></li>
-                <li className={tab=='holdings'?"is-active":""}><Link href="/holdings"><a>Holdings</a></Link></li>
+                <li className={tab=='positions'?"is-active":""}> <a href="/positions">Positions</a></li>
+                <li className={tab=='options2'?"is-active":""}> <a href="/options2">Options</a></li>
+                <li className={tab=='holdings'?"is-active":""}><a href="/holdings">Holdings</a></li>
               </ul>
             </div>
           </nav>

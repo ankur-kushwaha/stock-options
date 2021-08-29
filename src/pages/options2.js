@@ -103,7 +103,10 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   return (
     <div>
       <Header userProfile={profile}/>
-      <Table columns={columns} data={options}/>
+      <div className="container">
+        <Table columns={columns} data={options}/>
+
+      </div>
     </div>
   )
 }
