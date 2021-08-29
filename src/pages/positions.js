@@ -227,8 +227,8 @@ export async function getServerSideProps(ctx) {
   }
   
   if(!userProfile){
-    res.writeHead(301, { Location: `/api/login`})
-    res.end()
+    res.writeHead(307, { Location: `/api/login`})
+    return res.end()
   }
 
   try{
