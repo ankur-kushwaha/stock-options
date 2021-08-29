@@ -3,7 +3,7 @@ import DataTable from 'react-data-table-component';
 import Cell from './Cell';
 
 
-export default function Table({ title,data,columns }) { 
+export default function Table({ pagination=true,title,data,columns }) { 
   const handleClick = (item, type) => () => {
     let price = item.price,transactionType='BUY';
         
@@ -91,11 +91,11 @@ export default function Table({ title,data,columns }) {
     <div>
       <DataTable
         width={"100%"}
-        pagination={true}
-        paginationPerPage={20}
+        pagination={pagination}
+        paginationPerPage={10}
         compact={true}
         fixedHeader={true}
-        title={title||"Options"}
+        title={title||""}
         columns={columns}
         data={data}
       />

@@ -29,7 +29,6 @@ export default function socketIO() {
         expiry: params.expiry || '2021-09-30'//'2021-08-26'
       })
     })
-
     socket.on('ticks', data => {
       console.log("ticks", data);
       setTicks(data.ticks);
@@ -231,7 +230,7 @@ export default function socketIO() {
       sortable: true,
       grow: 1,
       cell:row=><div>
-      {row.breakeven} ({row.timeValue})
+        {row.breakeven} ({row.timeValue})
       </div>
     },
     {
@@ -240,7 +239,7 @@ export default function socketIO() {
       sortable: true,
       grow: 1,
       cell:row=><div>
-      {row.timeValue * row.lotSize }
+        {row.timeValue * row.lotSize }
       </div>
     },
     {
@@ -273,34 +272,28 @@ export default function socketIO() {
 
   return <>
     <Header tab="options"></Header>
-    <div>
+    <div className="container">
     
 
-      <section className="hero">
-        <div className="hero-body">
-          <p className="title">
-          Smart Options
-          </p>
-          <p className="subtitle">
-            <div className="select is-small" >
-              <select value={expiry} onChange={handleChange}>
-                <option>2021-10-28</option>
-                <option>2021-09-30</option>
-                <option>2021-08-26</option>
-              </select>
-            </div>
-          </p>
+      <p className="subtitle">
+        <div className="select is-small" >
+          <select value={expiry} onChange={handleChange}>
+            <option>2021-10-28</option>
+            <option>2021-09-30</option>
+            <option>2021-08-26</option>
+          </select>
         </div>
-      </section>
-      <div className="container">
-        <div className="columns">
+      </p>
+        
+      
+      <div className="columns">
 
-          <div className="column" >
-            <Table columns={columns} data={tableData}></Table>
-          </div>
-
+        <div className="column" >
+          <Table columns={columns} data={tableData}></Table>
         </div>
+
       </div>
+      
 
 
     </div></>

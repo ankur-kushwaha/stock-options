@@ -104,7 +104,7 @@ io.on('connect', async function (socket) {
 
   })
 
-  socket.on('init', async data => {
+  socket.on('init3', async data => {
     console.debug("INIT", data);
     let ticker = await getKiteTickerClient(socket.handshake.headers.cookie);
 
@@ -152,7 +152,7 @@ io.on('connect', async function (socket) {
 });
 
 nextApp.prepare().then(() => {
-    
+
   app.get("*", async (req, res) => {
     return nextHandler(req, res);
   })

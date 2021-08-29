@@ -2,10 +2,7 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 
-
-import useZerodha from '../helpers/useZerodha';
-
-export default function Header({ userProfile={},tab }) {
+export default function Header({ userProfile={},tab}) {
   let { user_name } = userProfile;
   const router = useRouter()
   let [state,setState] = React.useState({})
@@ -20,7 +17,7 @@ export default function Header({ userProfile={},tab }) {
   return (
 
     <div>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css" />
+      
 
       <section className="hero is-link">
 
@@ -76,11 +73,11 @@ export default function Header({ userProfile={},tab }) {
 
 
         <div className="hero-foot">
-          <nav className="tabs is-boxed is-fullwidth">
+          <nav className="tabs is-boxed">
             <div className="container">
               <ul>
                 <li className={tab=='positions'?"is-active":""}> <Link href="/positions"><a >Positions</a></Link></li>
-                <li className={tab=='options'?"is-active":""}> <Link href="/options"><a>Options</a></Link></li>
+                <li className={tab=='options2'?"is-active":""}> <Link href="/options2"><a>Options</a></Link></li>
                 <li className={tab=='holdings'?"is-active":""}><Link href="/holdings"><a>Holdings</a></Link></li>
               </ul>
             </div>
