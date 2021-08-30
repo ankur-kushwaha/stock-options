@@ -36,57 +36,59 @@ export default function holdings({
     netCurrentValue=0,
     netExpiryPnl=0;
 
-  let data = positions.map(item=>{
-    let stock = getStockCode(item.tradingsymbol);
-    let stockCode = stock.stockCode;
-    let strike  = stock.strike;
-    let stockPrice=0,stockPriceChg=0;
-    let currPrice,offerPrice,stockInstrumentToken,
-      optionInstrumentToken = item.instrument_token;
-    if(tickerQuotes){
-      stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token
-      let stockQuote = tickerQuotes[stockInstrumentToken];
-      stockPrice = stockQuote.last_price;
-      stockPriceChg = stockQuote.change;
-      let optionTicker = tickerQuotes[item.instrument_token]
-      currPrice = optionTicker.depth.buy[0].price || optionTicker.last_price;
-      offerPrice = optionTicker.depth.sell[0].price;
-    }
+  let data = positions
+    .filter(item=>item.quantity>0)
+    .map(item=>{
+      let stock = getStockCode(item.tradingsymbol);
+      let stockCode = stock.stockCode;
+      let strike  = stock.strike;
+      let stockPrice=0,stockPriceChg=0;
+      let currPrice,offerPrice,stockInstrumentToken,
+        optionInstrumentToken = item.instrument_token;
+      if(tickerQuotes){
+        stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token
+        let stockQuote = tickerQuotes[stockInstrumentToken];
+        stockPrice = stockQuote.last_price;
+        stockPriceChg = stockQuote.change;
+        let optionTicker = tickerQuotes[item.instrument_token]
+        currPrice = optionTicker.depth.buy[0].price || optionTicker.last_price;
+        offerPrice = optionTicker.depth.sell[0].price;
+      }
     
-    let buyPrice = item.buy_price
-    let breakeven = strike+buyPrice;
-    let timeValue = stockPrice - breakeven;
-    let breakevenChg = timeValue*100/stockPrice;
-    let quantity = item.buy_quantity;
-    let buyValue = item.buy_value;
-    let currValue = Number((currPrice * quantity).toFixed(2));
-    let pnl = currValue - buyValue;
-    let expiryPnL = (timeValue) * quantity;
+      let buyPrice = item.buy_price
+      let breakeven = strike+buyPrice;
+      let timeValue = stockPrice - breakeven;
+      let breakevenChg = timeValue*100/stockPrice;
+      let quantity = item.quantity;
+      let buyValue = item.buy_value;
+      let currValue = Number((currPrice * quantity).toFixed(2));
+      let pnl = currValue - buyValue;
+      let expiryPnL = (timeValue) * quantity;
 
-    totalProfit += pnl;
-    totalInvestment += buyValue;
-    netCurrentValue += currValue;
-    netExpiryPnl += expiryPnL;
+      totalProfit += pnl;
+      totalInvestment += buyValue;
+      netCurrentValue += currValue;
+      netExpiryPnl += expiryPnL;
 
-    return {
-      optionInstrumentToken,
-      pnl,
-      expiryPnL,
-      offerPrice,
-      buyValue,
-      bidPrice:currPrice,
-      buyPrice,
-      stockInstrumentToken,
-      currValue,
-      quantity,
-      stockPriceChg,
-      breakevenChg,
-      tradingsymbol:item.tradingsymbol,
-      stockCode, 
-      breakeven,
-      stockPrice
-    }
-  }).sort((a,b)=>a.pnl-b.pnl)
+      return {
+        optionInstrumentToken,
+        pnl,
+        expiryPnL,
+        offerPrice,
+        buyValue,
+        bidPrice:currPrice,
+        buyPrice,
+        stockInstrumentToken,
+        currValue,
+        quantity,
+        stockPriceChg,
+        breakevenChg,
+        tradingsymbol:item.tradingsymbol,
+        stockCode, 
+        breakeven,
+        stockPrice
+      }
+    }).sort((a,b)=>a.pnl-b.pnl)
 
   
 
