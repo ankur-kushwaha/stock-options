@@ -26,6 +26,12 @@ const ioHandler = (req, res) => {
             ticks
           }) 
         })
+
+        ticker.on("error", function onTicks(data) {
+          socket.emit('error',{
+            data
+          }) 
+        })
       })
     })
 

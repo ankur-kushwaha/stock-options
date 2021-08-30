@@ -1,5 +1,4 @@
 import React from 'react'
-import io from 'socket.io-client'
 import Header from '../components/Header';
 import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
@@ -58,7 +57,7 @@ export default function holdings({
     let breakevenChg = timeValue*100/stockPrice;
     let quantity = item.buy_quantity;
     let buyValue = item.buy_value;
-    let currValue = currPrice * quantity;
+    let currValue = Number((currPrice * quantity).toFixed(2));
     let pnl = currValue - buyValue;
     let expiryPnL = (timeValue) * quantity;
 
@@ -89,50 +88,51 @@ export default function holdings({
 
   let columns = [
     {
-      name: 'tradingsymbol',
-      wrap:true,
+      name: 'Option',
+      wrap:false,
+      grow:3,
       selector: 'tradingsymbol',
       sortable: true
     },
     {
-      name: 'stockCode',
+      name: 'Stock',
       selector: 'stockCode',
-      wrap:true,
       sortable: true,
+      grow:2,
     },
     {
-      name: 'stockPrice',
+      name: 'Stock Price(Day Change)',
       selector: 'stockPriceChg',
       
       sortable: true,
       cell:row=><div>{row.stockPrice}<br/>(<Price>{row.stockPriceChg}</Price>)</div>
     },
     {
-      name: 'breakeven',
+      name: 'Breakeven',
       selector: 'breakevenChg',
       wrap:true,
       sortable: true,
       cell:row=><div>{row.breakeven}<br/>(<Price>{row.breakevenChg}</Price>)</div>
     },
     {
-      name: 'quantity',
+      name: 'Quantity',
       selector: 'quantity',wrap:true,
       sortable: true
     },
    
     {
-      name: 'buyValue',
+      name: 'Buy Value',
       selector: 'buyValue',wrap:true,
       sortable: true
     },
     {
-      name: 'currValue',
+      name: 'Current Value',
       wrap:true,
       selector: 'currValue',
       sortable: true,
     },
     {
-      name: 'bidPrice',
+      name: 'Bid Price',
       selector: 'bidPrice',wrap:true,
       sortable: true,
       cell:row=><div>
@@ -143,36 +143,37 @@ export default function holdings({
         <span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
     },
     {
-      name: 'buyPrice',wrap:true,
+      name: 'Buy Price',wrap:true,
       selector: 'buyPrice',
       sortable: true
     },
     {
-      name: 'offerPrice',
+      name: 'Offer Price',
       selector: 'offerPrice',wrap:true,
       sortable: true,
       cell:row=><div><a onClick={createOrder({
         transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.offerPrice-0.5)
       })}>{row.offerPrice}</a>  <br/>
-      (<span className={"is-size-7 "+(row.offerPrice>row.buyPrice?'has-text-success':'has-text-danger')}>
-        {((row.offerPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
+      (<Price small>{(row.offerPrice-row.buyPrice)*100/row.buyPrice}</Price>)
+      </div>
+    },
+    
+    {
+      name: 'Expiry PnL',
+      selector: 'expiryPnL',
+      sortable: true,wrap:true,
+      cell:row=><div>
+        <Price>{row.expiryPnL}</Price></div>
     },
     {
       name: 'P&L',
       selector: 'pnl',
       sortable: true,wrap:true,
       cell:row=><div>
-        {row.pnl}<br/>
-        (<span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>
-          {(row.pnl*100/row.buyValue).toFixed(2)}%</span>)</div>
-    }, 
-    {
-      name: 'expiryPnL',
-      selector: 'expiryPnL',
-      sortable: true,wrap:true,
-      cell:row=><div>
-        <Price>{row.expiryPnL}</Price></div>
-    }, 
+        <Price>{row.pnl}</Price><br/>
+        <Price small>{row.pnl*100/row.buyValue}</Price>
+      </div>
+    },  
   ]
 
   
@@ -180,24 +181,39 @@ export default function holdings({
   return (
     <div >
       <Header userProfile={userProfile} tab="positions"></Header>
-      <div className="container">
-        <Table title={"Open Positions"} data={data} columns={columns} />
-        <footer>
-          
-          <div>
+
+      <div className="container mt-4">
+
+        <article className="message is-info">
+          <div className="message-body">
+            <div>
           Net Investment: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalInvestment, { code: 'INR' })}</span>
-          </div>
-          <div>
+            </div>
+            <div>
           Current Value: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netCurrentValue, { code: 'INR' })}</span>
-          </div>
-          <div>
+            </div>
+            <div>
           Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalProfit, { code: 'INR' })}</span>
-          </div>
-          <div>
+            </div>
+            <div>
           Net PnL (Expiry): <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netExpiryPnl, { code: 'INR' })}</span>
           
+            </div>
           </div>
-        </footer>
+        </article>
+
+       
+      
+      </div>
+
+      <div className="container mt-5">
+
+        <div className="columns">
+   
+          <div className="column">
+            <Table data={data} columns={columns} />
+          </div>
+        </div>
       </div> 
       
     </div>
@@ -207,7 +223,13 @@ export default function holdings({
 function getStockCode(tradingsymbol){
   const regex = /([A-Z]*)+(\w{5})(\d*)CE/;
   let out = tradingsymbol.match(regex);
-  let stockCode = out[1];
+  let stockCode;
+  try{
+    stockCode = out[1];
+  }catch(e){
+    console.log('tradingsymbol',tradingsymbol);
+    throw e;
+  }
   let strike = Number(out[3]);
   return {
     stockCode,
@@ -233,13 +255,14 @@ export async function getServerSideProps(ctx) {
 
   try{
     positions = await kc.getPositions();
+    positions = positions.net.filter(item=>item.exchange=='NFO');
     
+    let stockCodes = Array.from(new Set(positions
+      .map(item=>{
+        return getStockCode(item.tradingsymbol).stockCode
+      }))).map(item=>`NSE:${item}`);
     
-    let stockCodes = Array.from(new Set(positions.net.map(item=>{
-      return getStockCode(item.tradingsymbol).stockCode
-    }))).map(item=>`NSE:${item}`);
-    
-    let instruments = [...positions.net.map(item=>item.instrument_token),...stockCodes]
+    let instruments = [...positions.map(item=>item.instrument_token),...stockCodes]
     quotes = (await kc.getQuote(instruments))
     
     Object.values(quotes).map(item=>{
@@ -255,7 +278,7 @@ export async function getServerSideProps(ctx) {
   return {
     props:{
       userProfile,
-      positions:positions.net,
+      positions:positions,
       quotes
     }
   }

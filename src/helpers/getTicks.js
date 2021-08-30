@@ -15,6 +15,10 @@ export default function useTicker(instrumentTokens,callback){
         instrumentTokens:instrumentTokens.map(Number)
       })
     })
+
+    socket.on('error',(data) => {
+      console.error(data);
+    });
       
     socket.on('ticks', rawTicks => {
       let newTicks = rawTicks.ticks.reduce((a,b)=>{

@@ -1,22 +1,71 @@
-import mongoose from 'mongoose';
+const mongoose =require( 'mongoose');
 var Schema = mongoose.Schema;
 
 var user = new Schema({
-  name: {
-    type: String,
-    required: true
+  "user_id": {
+    "type": "String"
   },
-  email: {
-    type: String,
-    required: true
+  "user_type": {
+    "type": "String"
   },
-  password: {
-    type: String,
-    required: true
+  onTrial : { type: "Boolean", default: true },
+  "email": {
+    "type": "String"
   },
-  since: {
-    type: Date,
-    default: Date.now
+  "user_name": {
+    "type": "String"
+  },
+  "user_shortname": {
+    "type": "String"
+  },
+  "broker": {
+    "type": "String"
+  },
+  "exchanges": {
+    "type": [
+      "String"
+    ]
+  },
+  "products": {
+    "type": [
+      "String"
+    ]
+  },
+  "order_types": {
+    "type": [
+      "String"
+    ]
+  },
+  "avatar_url": {
+    "type": "Mixed"
+  },
+  "meta": {
+    "demat_consent": {
+      "type": "String"
+    }
+  },
+  "lastLogin": {
+    "type": "Date"
+  },
+  "firstLogin": {
+    "type": "Date"
+  },
+  "loginSessions": {
+    "type": [
+      "Mixed"
+    ]
+  }
+},{
+  toObject: {
+    transform: function (doc, ret) {
+      ret.lastLogin = JSON.stringify(ret.lastLogin);
+      delete ret._id;
+    }
+  },
+  toJSON: {
+    transform: function (doc, ret) {
+      delete ret._id;
+    }
   }
 });
 
@@ -24,4 +73,4 @@ mongoose.models = {};
 
 var User = mongoose.model('User', user);
 
-export default User;
+module.exports = User;

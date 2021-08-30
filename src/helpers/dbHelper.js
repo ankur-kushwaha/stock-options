@@ -1,4 +1,5 @@
 const Instrument = require('../models/instrument');
+const User = require('../models/user');
 
 async function fetchOptions({
   instrumentType='CE',
@@ -55,7 +56,26 @@ async function fetchStocks({
   }, [])
 }
 
+async function getUser(userId){
+  return await User.findOne({user_id:userId}).exec();
+}
+
+async function updateUser(user){
+  user.lastLogin = new Date();
+  await user.save();
+  return user;
+}
+
+async function createUser(userProfile){
+  let user = new User(userProfile);
+  user.firstLogin = new Date();
+  await user.save();
+}
+
 module.exports = {
+  createUser,
+  getUser,
+  updateUser,
   fetchStock,
   fetchStocks,
   fetchOptions

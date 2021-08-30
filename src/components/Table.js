@@ -90,12 +90,11 @@ export default function Table({ pagination=true,title,data,columns }) {
   return (
     <div>
       <DataTable
-        width={"100%"}
         pagination={pagination}
         paginationPerPage={10}
+        responsive={true}
         compact={true}
-        fixedHeader={true}
-        title={title||""}
+        noHeader={true}
         columns={columns}
         data={data}
       />

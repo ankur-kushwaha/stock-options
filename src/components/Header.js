@@ -1,6 +1,5 @@
 import React from 'react'
 import { useRouter } from 'next/router'
-import Link from 'next/link'
 
 export default function Header({ userProfile={},tab}) {
   let { user_name } = userProfile;
@@ -17,73 +16,69 @@ export default function Header({ userProfile={},tab}) {
   return (
 
     <div>
+
       
 
-      <section className="hero is-link">
+      
+      <header className="navbar">
+        <div className="container">
+          <div className="navbar-brand">
+            <a className="navbar-item">
+              <h1 className="is-size-5">Smart Options</h1>
+            </a>
+            <span className="navbar-burger" data-target="navbarMenuHeroC" onClick={toggleMenu}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </div>
+              
+          <div id="navbarMenuHeroC" className={"navbar-menu "+(state.isMenuOpen?"is-active":"")}>
 
-        <div className="hero-head">
-          <header className="navbar">
-            <div className="container">
-              <div className="navbar-brand">
-                <a className="navbar-item">
-                  
-                  <h1 className="title">Smart Options</h1>
-                </a>
-                <span className="navbar-burger" data-target="navbarMenuHeroC" onClick={toggleMenu}>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </span>
-              </div>
-              <div id="navbarMenuHeroC" className={"navbar-menu "+(state.isMenuOpen?"is-active":"")}>
-                <div className="navbar-end">
-                  {user_name &&
-                    <a className="navbar-item is-active">
+            
+
+            <div className="navbar-end">
+              <a className={"navbar-item is-size-7 "+(tab=='positions'?'is-active':"")} href="/positions">
+        Position
+              </a>
+
+              <a className={"navbar-item is-size-7 "+(tab=='options2'?'is-active':"")} href="/options2">
+        Options Finder
+              </a>
+              {user_name &&
+                    <a className="navbar-item is-size-7">
                       {user_name}
                     </a>
-                  }
-                  <span className="navbar-item">
-                    {user_name ?
-                      <a className="button is-link is-inverted" href='/api/logout'>
-                        <span className="icon">
-                          <i className="fab fa-github"></i>
-                        </span>
-                        <span>Logout</span>
-                      </a> :
-                      <a className="button is-link is-inverted" href='/api/login'>
-                        <span className="icon">
-                          <i className="fab fa-github"></i>
-                        </span>
-                        <span>Login</span>
-                      </a>}
-                  </span>
-                </div>
-              </div>
+              }
+              <span className="navbar-item is-size-6">
+                {user_name ?
+                  <a className="button is-small is-inverted" href='/api/logout'>
+                    
+                    <span>Logout</span>
+                  </a> :
+                  <a className="button is-link is-inverted" href='/api/login'>
+                    <span className="icon">
+                      <i className="fab fa-github"></i>
+                    </span>
+                    <span>Login</span>
+                  </a>}
+              </span>
             </div>
-          </header>
-        </div>
-
-
-        <div className="hero-body">
-          <div className="container has-text-centered">
-            <p className="title">
-            </p>
           </div>
         </div>
+      </header>
+        
 
 
-        <div className="hero-foot">
-          <nav className="tabs is-boxed">
-            <div className="container">
-              <ul>
-                <li className={tab=='positions'?"is-active":""}> <a href="/positions">Positions</a></li>
-                <li className={tab=='options2'?"is-active":""}> <a href="/options2">Options</a></li>
-                <li className={tab=='holdings'?"is-active":""}><a href="/holdings">Holdings</a></li>
-              </ul>
-            </div>
-          </nav>
-        </div>
-      </section>
+       
+
+
+      <div className="hero-foot">
+        <nav className="tabs is-boxed">
+           
+        </nav>
+      </div>
     </div>
+      
   )
 }

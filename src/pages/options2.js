@@ -1,5 +1,6 @@
 import React from 'react'
 import Header from '../components/Header'
+import Sidebar from '../components/Sidebar'
 import Table from '../components/Table';
 import { fetchOptions } from '../helpers/dbHelper';
 import getTicks from '../helpers/getTicks';
@@ -8,7 +9,7 @@ import Price from '../components/Price'
 
 export default function options2({stockOptions,stockQuotes,profile}) {
   let [tickerQuotes,setTickerQuotes] = React.useState();
-  console.log(profile)
+  
   
   React.useEffect(()=>{
     let stockInstruments = Object.values(stockQuotes).map(item=>item.instrument_token);
@@ -61,7 +62,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
     name: 'tradingsymbol',
     selector: 'tradingsymbol',
     sortable: true,
-    grow: 1
+    grow: 2
   },
   {
     name: 'stock',   
@@ -95,16 +96,27 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   {
     name: 'breakevenChg',   
     selector: 'breakevenChg',
-    cell:row=><Price reverseColoring>{row.breakevenChg}</Price>,
+    cell:row=><Price threshold={0.5} reverseColoring>{row.breakevenChg}</Price>,
     sortable: true,
   },
   ]
 
   return (
     <div>
+      
       <Header userProfile={profile}/>
-      <div className="container">
-        <Table columns={columns} data={options}/>
+      
+      <div className="mt-6 container">
+        <div className="columns">
+          <div className="column is-one-quarters">
+            <Sidebar></Sidebar>
+          </div>
+          
+          <div className="column">
+            <Table columns={columns} data={options}/>
+          </div>
+        </div>
+
 
       </div>
     </div>

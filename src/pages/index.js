@@ -1,25 +1,24 @@
 import React from 'react'
 
-import Head from 'next/head'
-import { parseCookies, setCookie, destroyCookie } from 'nookies'
+import {  setCookie } from 'nookies'
+import {createUser, getUser,updateUser} from '../helpers/dbHelper'
 
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
 import KiteConnect from 'kiteconnect';
-import { postData } from '../helpers';
+
 import { getKiteClient } from '../helpers/kiteConnect';
 import Header from '../components/Header';
+import { validateUser } from '../helpers/userHelper';
 let API_KEY = 'ab8oz67ryftv7gx9'
 
 var kc = new KiteConnect.KiteConnect({
   api_key: API_KEY
 });
 
-export default function Home({ userProfile }) {
-  console.log('userProfile',userProfile);
+export default function Home({ user }) {
+  
   return (
     <div>
-      <Header userProfile={userProfile}></Header>
+      <Header userProfile={user}></Header>
     </div>
   )
 }
@@ -29,13 +28,10 @@ async function generateAccessToken(requestToken) {
   try {
     let response = await kc.generateSession(requestToken, "60960qn0cpdca5m4o5lymxpj05xz0hcl");
 
-    console.log(response);
-
     if (response.access_token) {
       return response.access_token;
     } else {
       console.log('failed', response)
-      res.status(200).json({ status: 'failed', response })
     }
   } catch (e) {
     console.log(e)
@@ -48,7 +44,7 @@ export async function getServerSideProps(ctx) {
   let host = req.get( 'host');
   console.log(req.query.host , host, req.query.request_token)
   if(req.query.host && req.query.host != host){
-    let request_token = req.query.request_token;
+    let request_token = req.query.request_token;    
     if(req.query.host.search('localhost') >= 0){
       res.writeHead(301, { Location: `http://${req.query.host}?request_token=${request_token}`});
       return res.end()
@@ -81,14 +77,33 @@ export async function getServerSideProps(ctx) {
         accessToken
       });
       userProfile = await kt.getProfile()
+      
     } else {
       //redirectKiteLogin(res);
     }
   }
+  let user;
 
+  if(userProfile){
+    user = await getUser(userProfile.user_id);
+    if(!user){
+      user = await createUser(userProfile);
+    }else{
+      user = await updateUser(user);
+      if(validateUser(user)){
+        console.log("On Trail");
+      }else{
+        console.log("Trail Expired");
+      }
+    }
+  }
+
+  
+
+  
   return {
     props: {
-      userProfile
+      user:user.toObject()
     }
   }
 

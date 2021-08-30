@@ -1,6 +1,7 @@
 import React from 'react'
 
-import '../styles/globals.css'
+import '../styles/mystyles.scss'
+import '../styles/globals.scss'
 import '@fortawesome/fontawesome-free/js/brands'
 import '@fortawesome/fontawesome-free/js/solid'
 import '@fortawesome/fontawesome-free/js/fontawesome'

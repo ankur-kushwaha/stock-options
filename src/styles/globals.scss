@@ -2,6 +2,7 @@ html,
 body {
   padding: 0;
   margin: 0;
+  background-color: #f9f9f9;
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
@@ -31,4 +32,28 @@ button{
 .option-table-container{
   max-height: 800px;
   overflow: auto;
+}
+
+.navbar{
+  background-color: white;
+  box-shadow: 0px 0px 2px gray;
+}
+header .container{
+  box-shadow: none; 
+}
+
+.container{
+  background-color: white;
+  box-shadow: 0px 0px 2px gray; 
+}
+
+
+.sidebar{
+  padding:10px;
+  .filter-item{
+    padding:5px 0;
+  }
+  .select, select{
+    width: 100%;
+  }
 }
