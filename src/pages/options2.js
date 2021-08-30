@@ -11,7 +11,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   let stocks = ['TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
   let defaults =  {
     stocks,
-    maxInvestment:100000,
+    maxInvestment:160000,
     minInvestment:10000,
     breakevenThreshold:0.5,
     maxTimeloss:10000,
