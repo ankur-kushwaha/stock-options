@@ -41,7 +41,8 @@ export default function holdings({
     let stockCode = stock.stockCode;
     let strike  = stock.strike;
     let stockPrice=0,stockPriceChg=0;
-    let currPrice,offerPrice,stockInstrumentToken;
+    let currPrice,offerPrice,stockInstrumentToken,
+      optionInstrumentToken = item.instrument_token;
     if(tickerQuotes){
       stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token
       let stockQuote = tickerQuotes[stockInstrumentToken];
@@ -68,6 +69,7 @@ export default function holdings({
     netExpiryPnl += expiryPnL;
 
     return {
+      optionInstrumentToken,
       pnl,
       expiryPnL,
       offerPrice,
@@ -94,7 +96,9 @@ export default function holdings({
       wrap:false,
       grow:3,
       selector: 'tradingsymbol',
-      sortable: true
+      sortable: true,
+      cell:row=><a className={"has-text-link"} href={`https://kite.zerodha.com/chart/ext/ciq/NSE/${row.tradingsymbol}/${row.optionInstrumentToken}`} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
+      
     },
     {
       name: 'Stock',

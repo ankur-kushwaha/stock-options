@@ -37,6 +37,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   
     options= Object.values(stockOptions).map(item=>{
       let instrument = stockOptions[item.instrument_token];
+      let optionInstrumentToken = item.instrument_token;
       let stock = instrument.name;
       let stockTickerQuote = tickerQuotes[stockQuotes[stock].instrument_token];
       let optionTickerQuote = tickerQuotes[item.instrument_token];
@@ -52,6 +53,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       
       return {
         investment,
+        optionInstrumentToken,
         stockPrice,
         itemPrice,
         breakeven,
@@ -75,42 +77,43 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   
 
   let columns = [{
-    name: 'tradingsymbol',
+    name: 'Option',
     selector: 'tradingsymbol',
     sortable: true,
-    grow: 2
+    grow: 1,
+    cell:row=><a className={"has-text-link"} href={`https://kite.zerodha.com/chart/ext/ciq/NSE/${row.tradingsymbol}/${row.optionInstrumentToken}`} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
   },
   {
-    name: 'stock',   
+    name: 'Stock',   
     selector: 'stock'
   }
   ,{
-    name: 'stockPrice',   
+    name: 'Stock Price',   
     selector: 'stockPrice'
   },
   {
-    name: 'breakeven',   
+    name: 'Breakeven',   
     selector: 'breakeven'
   },{
-    name: 'itemPrice',   
+    name: 'Option Price',   
     selector: 'itemPrice'
   },
   {
-    name: 'timeValue',   
+    name: 'Time Value',   
     selector: 'timeValue',
     cell:row=><Price reverseColoring>{row.timeValue}</Price>
   },
   {
-    name: 'timeLoss',   
+    name: 'Time Loss',   
     selector: 'timeLoss',
     cell:row=><Price reverseColoring>{row.timeLoss}</Price>
   },
   {
-    name: 'investment',   
+    name: 'Min Investment',   
     selector: 'investment'
   },
   {
-    name: 'breakevenChg',   
+    name: 'Breakeven Change',   
     selector: 'breakevenChg',
     cell:row=><Price threshold={0.5} reverseColoring>{row.breakevenChg}</Price>,
     sortable: true,
@@ -129,7 +132,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       
       <div className="mt-6 container">
         <div className="columns">
-          <div className="column is-one-quarters">
+          <div className="column is-3">
             <Sidebar defaults={defaults} onFiltersUpdate={handleFiltersUpdate}></Sidebar>
           </div>
           

@@ -87,9 +87,12 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
             Filters
       </div>
       <div className="filter-item">
+        <div className="is-size-7">
+           Expiry
+        </div>
         <div className="select is-small">
           <select onChange={onChangeExpiry}>
-            <option>Select Expiry</option>
+            <option>Select</option>
             {expiryData.map(item=><option key={item.month}>{item.month}</option>)}
           </select>
         </div>
@@ -129,7 +132,7 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
       </div>
       <div className="filter-item">
         <div className="is-size-7">
-          Stocks
+          Underlying Stock
         </div>
         
         {defaults.stocks.map(item=>(<div key={item}>
