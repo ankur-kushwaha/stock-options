@@ -8,7 +8,17 @@ import { getKiteClient } from '../helpers/kiteConnect';
 import Price from '../components/Price'
 
 export default function options2({stockOptions,stockQuotes,profile}) {
+  let stocks = ['TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
+  let defaults =  {
+    stocks,
+    maxInvestment:100000,
+    minInvestment:10000,
+    breakevenThreshold:0.5,
+    maxTimeloss:10000,
+    selectedStocks:stocks
+  }
   let [tickerQuotes,setTickerQuotes] = React.useState();
+  let [filters,setFilters] = React.useState(defaults);
   
   
   React.useEffect(()=>{
@@ -52,7 +62,13 @@ export default function options2({stockOptions,stockQuotes,profile}) {
         breakevenChg
       }
     })
-      .filter(item=>item.investment<150000 && item.itemPrice > 0) 
+      .filter(item=>{
+        return item.investment>filters.minInvestment 
+        && item.investment<filters.maxInvestment  
+        && item.timeLoss < filters.maxTimeloss
+        && filters.selectedStocks.includes(item.stock)
+        && item.itemPrice > 0
+      }) 
       .sort((a,b)=>a.breakevenChg-b.breakevenChg);
   }
 
@@ -101,6 +117,11 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   },
   ]
 
+  function handleFiltersUpdate(filters){
+    console.log(filters);
+    setFilters(filters);
+  }
+
   return (
     <div>
       
@@ -109,7 +130,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       <div className="mt-6 container">
         <div className="columns">
           <div className="column is-one-quarters">
-            <Sidebar></Sidebar>
+            <Sidebar defaults={defaults} onFiltersUpdate={handleFiltersUpdate}></Sidebar>
           </div>
           
           <div className="column">

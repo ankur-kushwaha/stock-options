@@ -45,6 +45,9 @@ export default function Header({ userProfile={},tab}) {
               <a className={"navbar-item is-size-7 "+(tab=='options2'?'is-active':"")} href="/options2">
         Options Finder
               </a>
+              <a className={"navbar-item is-size-7 "} target="_blank" href="https://kite.zerodha.com/holdings" rel="noreferrer">
+        Holdings
+              </a>
               {user_name &&
                     <a className="navbar-item is-size-7">
                       {user_name}

@@ -27,9 +27,9 @@ export default function holdings({
 
   const {createOrder} = useZerodha();
 
-  console.log('quotes',quotes);
-  console.log('tickerquotes',tickerQuotes);
-  console.log('positions',positions);
+  // console.log('quotes',quotes);
+  // console.log('tickerquotes',tickerQuotes);
+  // console.log('positions',positions);
 
   let totalProfit =0,
     totalInvestment=0,
@@ -41,9 +41,10 @@ export default function holdings({
     let stockCode = stock.stockCode;
     let strike  = stock.strike;
     let stockPrice=0,stockPriceChg=0;
-    let currPrice,offerPrice;
+    let currPrice,offerPrice,stockInstrumentToken;
     if(tickerQuotes){
-      let stockQuote = tickerQuotes[quotes[`NSE:${stockCode}`].instrument_token];
+      stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token
+      let stockQuote = tickerQuotes[stockInstrumentToken];
       stockPrice = stockQuote.last_price;
       stockPriceChg = stockQuote.change;
       let optionTicker = tickerQuotes[item.instrument_token]
@@ -73,6 +74,7 @@ export default function holdings({
       buyValue,
       bidPrice:currPrice,
       buyPrice,
+      stockInstrumentToken,
       currValue,
       quantity,
       stockPriceChg,
@@ -82,7 +84,7 @@ export default function holdings({
       breakeven,
       stockPrice
     }
-  })
+  }).sort((a,b)=>a.pnl-b.pnl)
 
   
 
@@ -99,6 +101,8 @@ export default function holdings({
       selector: 'stockCode',
       sortable: true,
       grow:2,
+      cell:row=><><a className="has-text-link	" href={`https://kite.zerodha.com/chart/web/ciq/NSE/${row.stockCode}/${row.stockInstrumentToken}`} 
+        target="_blank" rel="noreferrer">{row.stockCode}</a></>
     },
     {
       name: 'Stock Price(Day Change)',
@@ -136,7 +140,7 @@ export default function holdings({
       selector: 'bidPrice',wrap:true,
       sortable: true,
       cell:row=><div>
-        <a onClick={createOrder({
+        <a className="has-text-link	" onClick={createOrder({
           transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.bidPrice)
         })}>{row.bidPrice}</a> <br/>
         (
@@ -151,7 +155,7 @@ export default function holdings({
       name: 'Offer Price',
       selector: 'offerPrice',wrap:true,
       sortable: true,
-      cell:row=><div><a onClick={createOrder({
+      cell:row=><div><a className="has-text-link	" onClick={createOrder({
         transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.offerPrice-0.5)
       })}>{row.offerPrice}</a>  <br/>
       (<Price small>{(row.offerPrice-row.buyPrice)*100/row.buyPrice}</Price>)

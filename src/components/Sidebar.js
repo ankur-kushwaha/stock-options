@@ -1,10 +1,12 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 
-export default function Sidebar({ onChange,hideSymbol }) {
+export default function Sidebar({defaults, onFiltersUpdate}) {
 
   // const router = useRouter();
-  let [selectedStocks,setSelectedStocks] = React.useState([]);
+  
+  let [selectedStocks,setSelectedStocks] = React.useState(defaults.selectedStocks);
+  let [state,setState] = React.useState(defaults);
   
 
   function handleChange(e) {
@@ -41,7 +43,7 @@ export default function Sidebar({ onChange,hideSymbol }) {
     })
   }
 
-  let stocks = ['TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
+  
 
   function onChangeStocks(e){
     if(e.target.checked){
@@ -56,7 +58,28 @@ export default function Sidebar({ onChange,hideSymbol }) {
     }
     
   }
-  console.log(selectedStocks);
+  
+
+  function handleUpdate(){
+    onFiltersUpdate({
+      ...state,
+      selectedStocks
+    })
+  }
+
+  const handleInputChange = (key)=> (e)=>{
+    setState({
+      ...state,
+      [key]:e.target.value
+    })
+  }
+
+  function uncheckAll(){
+    setSelectedStocks([]);
+  }
+  function checkAll(){
+    setSelectedStocks(defaults.selectedStocks);
+  }
 
   return (
     <div className="sidebar">
@@ -73,18 +96,35 @@ export default function Sidebar({ onChange,hideSymbol }) {
       </div>
       <div className="filter-item">
         <div className="control">
-          <input className="input is-small" type="number" placeholder="Min Investment"/>
+          <div className="is-size-7">
+            Min Investment
+          </div>
+          <input onChange={handleInputChange('minInvestment')} value={state.minInvestment} className="input is-small" type="number" placeholder="Min Investment"/>
         </div>
       </div>
       <div className="filter-item">
         <div className="control">
-          <input className="input is-small" type="number" placeholder="Breakeven Threshold"/>
+          <div className="is-size-7">
+            Max Investment
+          </div>
+          <input onChange={handleInputChange('maxInvestment')} value={state.maxInvestment} className="input is-small" type="number" placeholder="Max Investment"/>
+        </div>
+      </div>
+      <div className="filter-item">
+        <div className="control">
+          <div className="is-size-7">
+        Breakeven Threshold
+          </div>
+          <input onChange={handleInputChange('breakevenThreshold')} value={state.breakevenThreshold} className="input is-small" type="number" placeholder="Breakeven Threshold"/>
         </div>
       </div>
 
       <div className="filter-item">
         <div className="control">
-          <input className="input is-small" type="number" placeholder="Max Timeloss"/>
+          <div className="is-size-7">
+        Max Timeloss
+          </div>
+          <input onChange={handleInputChange('maxTimeloss')} value={state.maxTimeloss} className="input is-small" type="number" placeholder="Max Timeloss"/>
         </div>
       </div>
       <div className="filter-item">
@@ -92,13 +132,25 @@ export default function Sidebar({ onChange,hideSymbol }) {
           Stocks
         </div>
         
-        {stocks.map(item=>(<div key={item}>
-          <label className="checkbox is-small">
-            <input onChange={onChangeStocks} value={item} type="checkbox"/>&nbsp;{item}
+        {defaults.stocks.map(item=>(<div key={item}>
+          <label className="checkbox is-size-7">
+            <input checked={selectedStocks.includes(item)} onChange={onChangeStocks} value={item} type="checkbox"/>&nbsp;{item}
           </label>
         </div>))}
       </div>
       
+      <button onClick={checkAll} className="is-small button is-primary">
+        Check All
+      </button> 
+      &nbsp;
+      <button onClick={uncheckAll} className="is-small button is-primary">
+        Uncheck All
+      </button> 
+      <br />
+      <br />
+      <button onClick={handleUpdate} className="is-small button is-primary">
+        Update
+      </button>
     </div>
   )
 }
