@@ -37,7 +37,6 @@ export default function holdings({
     netExpiryPnl=0;
 
   let data = positions
-    .filter(item=>item.quantity>0)
     .map(item=>{
       let stock = getStockCode(item.tradingsymbol);
       let stockCode = stock.stockCode;
@@ -265,7 +264,7 @@ export async function getServerSideProps(ctx) {
 
   try{
     positions = await kc.getPositions();
-    positions = positions.net.filter(item=>item.exchange=='NFO');
+    positions = positions.net.filter(item=>item.exchange=='NFO' && item.quantity>0);
     
     let stockCodes = Array.from(new Set(positions
       .map(item=>{
