@@ -56,13 +56,15 @@ export default function holdings({
     
       let buyPrice = item.buy_price
       let breakeven = strike+buyPrice;
-      let timeValue = stockPrice - breakeven;
-      let breakevenChg = timeValue*100/stockPrice;
+      let minTimeValue = -stockPrice + (strike + currPrice);
+      let maxTimeValue = -stockPrice + (strike + offerPrice);
+      let breakevenDiff = stockPrice - breakeven;
+      let breakevenChg = breakevenDiff*100/stockPrice;
       let quantity = item.quantity;
       let buyValue = item.buy_value;
       let currValue = Number((currPrice * quantity).toFixed(2));
       let pnl = currValue - buyValue;
-      let expiryPnL = (timeValue) * quantity;
+      let expiryPnL = (breakevenDiff) * quantity;
 
       totalProfit += pnl;
       totalInvestment += buyValue;
@@ -85,7 +87,9 @@ export default function holdings({
         tradingsymbol:item.tradingsymbol,
         stockCode, 
         breakeven,
-        stockPrice
+        stockPrice,
+        timeValue: minTimeValue,
+        maxTimeValue
       }
     }).sort((a,b)=>a.pnl-b.pnl)
 
@@ -135,10 +139,13 @@ export default function holdings({
       sortable: true
     },
     {
-      name: 'Current Value',
+      name: 'TimeValue',
       wrap:true,
-      selector: 'currValue',
+      selector: 'maxTimeValue',
       sortable: true,
+      cell:row=><div>
+        <Price reverseColoring>{row.maxTimeValue}</Price>
+      </div>
     },
     {
       name: 'Bid Price',
@@ -166,21 +173,14 @@ export default function holdings({
       (<Price small>{(row.offerPrice-row.buyPrice)*100/row.buyPrice}</Price>)
       </div>
     },
-    
+
     {
-      name: 'Expiry PnL',
-      selector: 'expiryPnL',
-      sortable: true,wrap:true,
-      cell:row=><div>
-        <Price>{row.expiryPnL}</Price></div>
-    },
-    {
-      name: 'P&L',
+      name: 'P&L (Expiry)',
       selector: 'pnl',
       sortable: true,wrap:true,
       cell:row=><div>
         <Price>{row.pnl}</Price><br/>
-        <Price small>{row.pnl*100/row.buyValue}</Price>
+        <Price>{row.expiryPnL}</Price>
       </div>
     },  
   ]
@@ -264,7 +264,7 @@ export async function getServerSideProps(ctx) {
 
   try{
     positions = await kc.getPositions();
-    positions = positions.net.filter(item=>item.exchange=='NFO' && item.quantity>0);
+    positions = positions.net.filter(item=>item.exchange=='NFO' && item.quantity > 0);
     
     let stockCodes = Array.from(new Set(positions
       .map(item=>{

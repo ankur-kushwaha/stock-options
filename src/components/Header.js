@@ -59,10 +59,8 @@ export default function Header({ userProfile={},tab}) {
                     
                     <span>Logout</span>
                   </a> :
-                  <a className="button is-link is-inverted" href='/api/login'>
-                    <span className="icon">
-                      <i className="fab fa-github"></i>
-                    </span>
+                  <a className="button is-small is-inverted" href='/api/login'>
+                
                     <span>Login</span>
                   </a>}
               </span>

@@ -15,10 +15,32 @@ var kc = new KiteConnect.KiteConnect({
 });
 
 export default function Home({ user }) {
-  
+  console.log(user)
   return (
     <div>
+      
       <Header userProfile={user}></Header>
+
+
+      {!user.user_id && (
+        <div className="mt-6 container">
+
+          <article className="message is-info">
+            <div className="message-body">
+            Please login to get started
+            </div></article>
+        </div>
+      )} 
+
+      {user.user_id && (
+        <div className="mt-6 container">
+
+          <article className="message is-info">
+            <div className="message-body">
+     Please choose options from the top menu
+            </div></article>
+        </div>
+      )}
     </div>
   )
 }

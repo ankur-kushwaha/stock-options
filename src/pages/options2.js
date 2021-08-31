@@ -6,9 +6,11 @@ import { fetchOptions } from '../helpers/dbHelper';
 import getTicks from '../helpers/getTicks';
 import { getKiteClient } from '../helpers/kiteConnect';
 import Price from '../components/Price'
+import useZerodha from '../helpers/useZerodha';
 
 export default function options2({stockOptions,stockQuotes,profile}) {
-  let stocks = ['TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
+  let stocks = ['ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
+  
   let defaults =  {
     stocks,
     maxInvestment:160000,
@@ -19,7 +21,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   }
   let [tickerQuotes,setTickerQuotes] = React.useState();
   let [filters,setFilters] = React.useState(defaults);
-  
+  const {createOrder} = useZerodha();
   
   React.useEffect(()=>{
     let stockInstruments = Object.values(stockQuotes).map(item=>item.instrument_token);
@@ -36,22 +38,38 @@ export default function options2({stockOptions,stockQuotes,profile}) {
 
   
     options= Object.values(stockOptions).map(item=>{
+      
       let instrument = stockOptions[item.instrument_token];
       let optionInstrumentToken = item.instrument_token;
       let stock = instrument.name;
-      let stockTickerQuote = tickerQuotes[stockQuotes[stock].instrument_token];
+      let stockInstrumentToken = stockQuotes[stock].instrument_token
+      let stockTickerQuote = tickerQuotes[stockInstrumentToken];
       let optionTickerQuote = tickerQuotes[item.instrument_token];
       
       let stockPrice = stockTickerQuote.last_price;
       //option price
-      let itemPrice = optionTickerQuote.depth.sell[0].price||optionTickerQuote.last_price;
+      let itemPrice = optionTickerQuote.depth.sell[0].price;
+      let itemBidPrice = optionTickerQuote.depth.buy[0].price;
       let breakeven = item.strike+itemPrice;
       let timeValue = breakeven-stockPrice;
       let breakevenChg = Number((timeValue*100/stockPrice).toFixed(2));
+      let lotSize = item.lot_size;
       let investment = item.lot_size * itemPrice;
       let timeLoss = item.lot_size * timeValue;
+
+      let highlight = false;
+      if(item.investment>filters.minInvestment 
+      && item.investment<filters.maxInvestment  
+      && item.timeLoss < filters.maxTimeloss
+      && item.itemPrice > 0){
+        highlight = true;
+      }
       
       return {
+        stockInstrumentToken,
+        itemBidPrice,
+        lotSize,
+        highlight,
         investment,
         optionInstrumentToken,
         stockPrice,
@@ -65,11 +83,7 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       }
     })
       .filter(item=>{
-        return item.investment>filters.minInvestment 
-        && item.investment<filters.maxInvestment  
-        && item.timeLoss < filters.maxTimeloss
-        && filters.selectedStocks.includes(item.stock)
-        && item.itemPrice > 0
+        return item.itemPrice > 0 && filters.selectedStocks.includes(item.stock)
       }) 
       .sort((a,b)=>a.breakevenChg-b.breakevenChg);
   }
@@ -85,7 +99,9 @@ export default function options2({stockOptions,stockQuotes,profile}) {
   },
   {
     name: 'Stock',   
-    selector: 'stock'
+    selector: 'stock',
+    cell:row=><><a className="has-text-link	" href={`https://kite.zerodha.com/chart/web/ciq/NSE/${row.stock}/${row.stockInstrumentToken}`} 
+      target="_blank" rel="noreferrer">{row.stock}</a></>
   }
   ,{
     name: 'Stock Price',   
@@ -96,7 +112,10 @@ export default function options2({stockOptions,stockQuotes,profile}) {
     selector: 'breakeven'
   },{
     name: 'Option Price',   
-    selector: 'itemPrice'
+    selector: 'itemPrice',
+    cell:row=><><a className="has-text-link" onClick={createOrder({
+      transactionType:"BUY",tradingsymbol:row.tradingsymbol,quantity:row.lotSize,price:(row.itemBidPrice+0.5)
+    })} target="_blank">{row.itemPrice}</a></>
   },
   {
     name: 'Time Value',   

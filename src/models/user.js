@@ -59,6 +59,7 @@ var user = new Schema({
   toObject: {
     transform: function (doc, ret) {
       ret.lastLogin = JSON.stringify(ret.lastLogin);
+      ret.firstLogin = JSON.stringify(ret.firstLogin||"");
       delete ret._id;
     }
   },
