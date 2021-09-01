@@ -11,8 +11,9 @@ import { useRouter } from 'next/router'
 
 export default function options2({stockOptions,stockQuotes,profile}) {
   const router = useRouter()
-  
-  let stocks = ['ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
+
+  let stocks = ['ASIANPAINT','SRF','ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
+
 
   let selectedStocks;
   if(router.query.tradingsymbols){
@@ -69,12 +70,14 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       let timeLoss = item.lot_size * timeValue;
 
       let highlight = false;
-      if(item.investment>filters.minInvestment 
-      && item.investment<filters.maxInvestment  
-      && item.timeLoss < filters.maxTimeloss
-      && item.itemPrice > 0){
+      if(investment>Number(filters.minInvestment) 
+      && investment<Number(filters.maxInvestment)  
+      && timeLoss < filters.maxTimeloss
+      && itemPrice > 0){
         highlight = true;
       }
+
+      // console.log(highlight);
       
       return {
         stockInstrumentToken,
@@ -94,7 +97,8 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       }
     })
       .filter(item=>{
-        return item.itemPrice > 0 && filters.selectedStocks.includes(item.stock)
+        return item.itemPrice > 0 
+        && filters.selectedStocks.includes(item.stock)
       }) 
       .sort((a,b)=>a.breakevenChg-b.breakevenChg);
   }
@@ -122,11 +126,18 @@ export default function options2({stockOptions,stockQuotes,profile}) {
     name: 'Breakeven',   
     selector: 'breakeven'
   },{
+    name: 'Bid Price',   
+    selector: 'itemBidPrice',
+    cell:row=><><a className="has-text-link" 
+      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${row.itemBidPrice+0.5}&variety=regular
+    `} target="_blank" rel="noreferrer">{row.itemBidPrice}</a></>
+  },
+  {
     name: 'Option Price',   
     selector: 'itemPrice',
-    cell:row=><><a className="has-text-link" onClick={createOrder({
-      transactionType:"BUY",tradingsymbol:row.tradingsymbol,quantity:row.lotSize,price:(row.itemBidPrice+0.5)
-    })} target="_blank">{row.itemPrice}</a></>
+    cell:row=><><a className="has-text-link" 
+      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${((row.itemBidPrice+row.itemPrice)/2).toFixed(2)}&variety=regular
+    `} target="_blank" rel="noreferrer">{row.itemPrice}</a></>
   },
   {
     name: 'Time Value',   
@@ -181,10 +192,11 @@ export async function getServerSideProps(ctx){
   let {req} = ctx;
   let {instrumentType,expiry} = req.query;
 
-  let tradingsymbols = ['TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
+  let tradingsymbols = ['ASIANPAINT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
 
   let kc = await getKiteClient(req.cookies);
   let profile = await kc.getProfile();
+  
   let instruments = tradingsymbols.map(item=>`NSE:${item}`);
   
   let quotes = await kc.getQuote(instruments);

@@ -9,24 +9,12 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
   let [state,setState] = React.useState(defaults);
   
 
-  function handleChange(e) {
-    openUrl({
-      newExpiry: e.target.value
-    }) 
-
-  }
-
   function openUrl({ newSymbol, newExpiry }) {
         
     let url = window.location.origin + window.location.pathname + "?tradingsymbol=" + (newSymbol || tradingsymbol) + "&expiry=" + (newExpiry || expiry||"")
     window.location.href = url;
   }
 
-  function handleSymbolChange(e) {
-    openUrl({
-      newSymbol: e.target.value
-    })
-  }
 
   let expiryData=[{
     month:"Sep",
@@ -78,7 +66,7 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
     setSelectedStocks([]);
   }
   function checkAll(){
-    setSelectedStocks(defaults.selectedStocks);
+    setSelectedStocks(defaults.stocks);
   }
 
   return (

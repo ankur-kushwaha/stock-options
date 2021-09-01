@@ -87,9 +87,20 @@ export default function Table({ pagination=true,title,data,columns }) {
       </div>)
     }
   ];
+
+  const conditionalRowStyles = [
+    {
+      when: row => row.highlight == true,
+      style: {
+        backgroundColor: '#48c78e36'
+      },
+    },
+  ];
+
   return (
     <div>
       <DataTable
+        conditionalRowStyles={conditionalRowStyles}
         pagination={pagination}
         paginationPerPage={10}
         responsive={true}

@@ -20,6 +20,15 @@ const ioHandler = (req, res) => {
           ticker.subscribe(tokens);
           ticker.setMode(ticker.modeFull, tokens);
         })
+
+        ticker.on("subscribe", function onTicks({instrumentTokens}) {
+          ticker.subscribe(instrumentTokens);
+          ticker.setMode(ticker.modeFull, tokens);
+        });
+
+        ticker.on("unsubscribe", function onTicks({instrumentTokens}) {
+          ticker.unsubscribe(instrumentTokens);
+        });
     
         ticker.on("ticks", function onTicks(ticks) {
           socket.emit('ticks',{
