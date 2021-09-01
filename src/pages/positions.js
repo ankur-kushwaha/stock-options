@@ -57,7 +57,7 @@ export default function holdings({
       let buyPrice = item.buy_price
       let breakeven = strike+buyPrice;
       let minTimeValue = -stockPrice + (strike + currPrice);
-      let maxTimeValue = -stockPrice + (strike + offerPrice);
+      let maxTimeValue = (-stockPrice + (strike + offerPrice))/stockPrice;
       let breakevenDiff = stockPrice - breakeven;
       let breakevenChg = breakevenDiff*100/stockPrice;
       let quantity = item.quantity;
@@ -102,7 +102,7 @@ export default function holdings({
       grow:3,
       selector: 'tradingsymbol',
       sortable: true,
-      cell:row=><a className={"has-text-link"} href={`https://kite.zerodha.com/chart/ext/ciq/NSE/${row.tradingsymbol}/${row.optionInstrumentToken}`} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
+      cell:row=><a className={"has-text-link"} href={'/options2?tradingsymbols='+row.stockCode} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
       
     },
     {
@@ -116,7 +116,6 @@ export default function holdings({
     {
       name: 'Stock Price(Day Change)',
       selector: 'stockPriceChg',
-      
       sortable: true,
       cell:row=><div>{row.stockPrice}<br/>(<Price>{row.stockPriceChg}</Price>)</div>
     },
@@ -144,7 +143,10 @@ export default function holdings({
       selector: 'maxTimeValue',
       sortable: true,
       cell:row=><div>
-        <Price reverseColoring>{row.maxTimeValue}</Price>
+        <a target="_blank" href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${row.buyPrice}&variety=regular
+`} rel="noreferrer"><Price reverseColoring>{row.maxTimeValue}</Price></a>
+
+       
       </div>
     },
     {

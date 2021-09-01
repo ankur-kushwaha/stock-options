@@ -7,17 +7,28 @@ import getTicks from '../helpers/getTicks';
 import { getKiteClient } from '../helpers/kiteConnect';
 import Price from '../components/Price'
 import useZerodha from '../helpers/useZerodha';
+import { useRouter } from 'next/router'
 
 export default function options2({stockOptions,stockQuotes,profile}) {
-  let stocks = ['ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
+  const router = useRouter()
   
+  let stocks = ['ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
+
+  let selectedStocks;
+  if(router.query.tradingsymbols){
+    selectedStocks = router.query.tradingsymbols.split(",");
+  }else{
+    selectedStocks = stocks;
+  }
+  
+
   let defaults =  {
     stocks,
     maxInvestment:160000,
     minInvestment:10000,
     breakevenThreshold:0.5,
     maxTimeloss:10000,
-    selectedStocks:stocks
+    selectedStocks
   }
   let [tickerQuotes,setTickerQuotes] = React.useState();
   let [filters,setFilters] = React.useState(defaults);
