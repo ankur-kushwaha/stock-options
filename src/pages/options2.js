@@ -9,13 +9,10 @@ import Price from '../components/Price'
 import useZerodha from '../helpers/useZerodha';
 import { useRouter } from 'next/router'
 
-export default function options2({stockOptions,stockQuotes,profile}) {
+export default function options2({stockOptions,stockQuotes,profile,stocks}) {
   const router = useRouter()
 
-  let stocks = ['ASIANPAINT','SRF','ADANIENT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'].sort();
-
-
-  let selectedStocks;
+  let selectedStocks
   if(router.query.tradingsymbols){
     selectedStocks = router.query.tradingsymbols.split(",");
   }else{
@@ -97,8 +94,18 @@ export default function options2({stockOptions,stockQuotes,profile}) {
       }
     })
       .filter(item=>{
-        return item.itemPrice > 0 
-        && filters.selectedStocks.includes(item.stock)
+
+        if(filters.shouldRemoveFiltered){
+          return item.investment>Number(filters.minInvestment) 
+          && item.investment<Number(filters.maxInvestment)  
+          && item.timeLoss < filters.maxTimeloss
+          && item.itemPrice > 0
+          && filters.selectedStocks.includes(item.stock)
+        }else{
+          return item.itemPrice > 0 
+          && filters.selectedStocks.includes(item.stock)
+        }
+        
       }) 
       .sort((a,b)=>a.breakevenChg-b.breakevenChg);
   }
@@ -192,7 +199,7 @@ export async function getServerSideProps(ctx){
   let {req} = ctx;
   let {instrumentType,expiry} = req.query;
 
-  let tradingsymbols = ['ASIANPAINT','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'COFORGE', 'MPHASIS', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','HINDUNILVR','TATAPOWER'];
+  let tradingsymbols = ['VEDL','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','TATAPOWER'];
 
   let kc = await getKiteClient(req.cookies);
   let profile = await kc.getProfile();
@@ -221,7 +228,8 @@ export async function getServerSideProps(ctx){
     props:{
       stockQuotes,
       stockOptions,
-      profile
+      profile,
+      stocks:tradingsymbols.sort()
     }
   }
 }

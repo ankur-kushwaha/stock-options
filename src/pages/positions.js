@@ -232,11 +232,14 @@ export default function holdings({
 }
 
 function getStockCode(tradingsymbol){
-  const regex = /([A-Z]*)+(\w{5})(\d*)CE/;
+  const regex = /([A-Z]*)+(\w{5})(\d*)[C|P]E/;
   let out = tradingsymbol.match(regex);
   let stockCode;
   try{
     stockCode = out[1];
+    if(stockCode == 'NIFTY'){
+      stockCode = 'NIFTY 50';
+    }
   }catch(e){
     console.log('tradingsymbol',tradingsymbol);
     throw e;

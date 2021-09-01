@@ -106,7 +106,7 @@ export async function getServerSideProps(ctx) {
   }
   let user;
 
-  if(userProfile){
+  if(userProfile.user_id){
     user = await getUser(userProfile.user_id);
     if(!user){
       user = await createUser(userProfile);
@@ -118,6 +118,11 @@ export async function getServerSideProps(ctx) {
         console.log("Trail Expired");
       }
     }
+  }
+
+  if(userProfile.user_id){
+    res.writeHead(301, { Location: `/positions`});
+    return res.end()
   }
 
   

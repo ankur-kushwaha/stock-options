@@ -56,9 +56,13 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
   }
 
   const handleInputChange = (key)=> (e)=>{
+    let value = e.target.value;
+    if(e.target.type == 'checkbox' ){
+      value = e.target.checked;
+    }
     setState({
       ...state,
-      [key]:e.target.value
+      [key]:value
     })
   }
 
@@ -139,6 +143,11 @@ export default function Sidebar({defaults, onFiltersUpdate}) {
       </button> 
       <br />
       <br />
+      <label className="checkbox is-size-7">
+        <input checked={state.shouldRemoveFiltered} onChange={handleInputChange('shouldRemoveFiltered')} value={""} type="checkbox"/> Remove Filtered Options
+      </label>
+      <br />
+      <br/>
       <button onClick={handleUpdate} className="is-small button is-primary">
         Update
       </button>
