@@ -8,9 +8,11 @@ import { getKiteClient } from '../helpers/kiteConnect';
 import Price from '../components/Price'
 import useZerodha from '../helpers/useZerodha';
 import { useRouter } from 'next/router'
+import useNotifications from '../helpers/useNotificaiton';
 
 export default function options2({stockOptions,stockQuotes,profile,stocks}) {
   const router = useRouter()
+  const {pushNotification} = useNotifications();
 
   let selectedStocks
   if(router.query.tradingsymbols){
@@ -44,6 +46,7 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
 
   let options;
   if(tickerQuotes){
+
 
   
     options= Object.values(stockOptions).map(item=>{
@@ -109,6 +112,17 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
       }) 
       .sort((a,b)=>a.breakevenChg-b.breakevenChg);
   }
+
+  if(options && options.length>0){
+    let best = options[0];
+    if(best.timeLoss < 3000  ){
+      pushNotification({
+        body:`${best.tradingsymbol} has timeloss ${best.timeLoss}`
+      });    
+    }
+    
+  }
+  
 
   
 
