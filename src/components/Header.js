@@ -38,6 +38,9 @@ export default function Header({ userProfile={},tab}) {
             
 
             <div className="navbar-end">
+              <a className={"navbar-item is-size-7 "+(tab=='positions'?'is-active':"")} href="/BuySell?tradingsymbol=NIFTY2190917200CE">
+        AutoTrade
+              </a>
               <a className={"navbar-item is-size-7 "+(tab=='positions'?'is-active':"")} href="/positions">
         Position
               </a>
