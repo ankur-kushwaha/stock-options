@@ -54,6 +54,22 @@ var user = new Schema({
     "type": [
       "Mixed"
     ]
+  },
+  configs:{
+    "maxOrder": {
+      "type": "Number"
+    },"minTarget": {
+      "type": "Number"
+    },"quantity": {
+      "type": "Number"
+    },"marketOrder": {
+      "type": "Boolean"
+    }
+  },
+  "orders":{
+    "type": [
+      "Mixed"
+    ]
   }
 },{
   toObject: {

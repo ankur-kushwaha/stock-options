@@ -156,6 +156,10 @@ nextApp.prepare().then(() => {
   app.get("*", async (req, res) => {
     return nextHandler(req, res);
   })
+
+  app.post('*', (req, res) => {
+    return nextHandler(req, res)
+  })
     
   mongoose.connect('mongodb+srv://ankur:ankur@cluster0.wgb6k.mongodb.net/myFirstDatabase?retryWrites=true&w=majority' ,{
     useNewUrlParser: true

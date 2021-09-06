@@ -36,7 +36,7 @@ export default async function createOrder(req, res) {
 
   console.log('Creating order with', reqData);
         
-  kt.placeOrder("regular",reqData).then(data=>{
+  kt.placeOrder("amo",reqData).then(data=>{
     console.log(data)
     
     // res.writeHead(307, { Location: `https://kite.zerodha.com/orders`})

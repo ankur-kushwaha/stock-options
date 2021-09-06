@@ -100,6 +100,7 @@ export default function Table({ pagination=true,title,data,columns }) {
   return (
     <div>
       <DataTable
+        title={title}
         conditionalRowStyles={conditionalRowStyles}
         responsive={true}
         compact={true}

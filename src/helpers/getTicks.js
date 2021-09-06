@@ -16,7 +16,7 @@ export default function useTicker(instrumentTokens,callback){
     })
 
     socket.on('error',(data) => {
-      console.error(data);
+      console.error('getTicks',data);
     });
       
     socket.on('ticks', rawTicks => {
