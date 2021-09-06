@@ -63,7 +63,7 @@ export default function holdings({
       let quantity = item.quantity;
       let buyValue = item.buy_value;
       let currValue = Number((currPrice * quantity).toFixed(2));
-      let pnl = currValue - buyValue;
+      let pnl = (currPrice - buyPrice)*quantity;
       let expiryPnL = (breakevenDiff) * quantity;
 
       totalProfit += pnl;
@@ -207,7 +207,7 @@ export default function holdings({
           Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalProfit, { code: 'INR' })}</span>
             </div>
             <div>
-          Net PnL (Expiry): <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netExpiryPnl, { code: 'INR' })}</span>
+          Net PnL (Expiry): <Price>{netExpiryPnl}</Price>
           
             </div>
           </div>

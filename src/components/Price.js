@@ -1,6 +1,7 @@
 import React from 'react'
 
 export default function Price({small=false,threshold=0,children,reverseColoring}) {
+
   let cond;
 
   if(reverseColoring){
@@ -10,7 +11,7 @@ export default function Price({small=false,threshold=0,children,reverseColoring}
   }
   return (
     <span className={(small?"is-size-7":"")+" "+(cond?"has-text-success":"has-text-danger")}>
-      {children.toFixed(2)}
+      {children && Number(children).toFixed(2)}
     </span>
   )
 }

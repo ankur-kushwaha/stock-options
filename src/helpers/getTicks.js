@@ -2,8 +2,7 @@
 import io from 'socket.io-client'
 export default function useTicker(instrumentTokens,callback){
   
-  
-  console.log(123);
+
   let ticks = {};
   fetch('/api/ticker').finally(() => {
     const socket = io()

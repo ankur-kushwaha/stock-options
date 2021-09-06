@@ -38,7 +38,7 @@ const ioHandler = (req, res) => {
 
         ticker.on("error", function onTicks(data) {
           socket.emit('error',{
-            data
+            data:data.toString()
           }) 
         })
       })

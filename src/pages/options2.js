@@ -54,6 +54,9 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
       let instrument = stockOptions[item.instrument_token];
       let optionInstrumentToken = item.instrument_token;
       let stock = instrument.name;
+      if(stock=='NIFTY'){
+        stock = 'NIFTY 50'
+      }
       let stockInstrumentToken = stockQuotes[stock].instrument_token
       let stockTickerQuote = tickerQuotes[stockInstrumentToken];
       let optionTickerQuote = tickerQuotes[item.instrument_token];
@@ -62,6 +65,10 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
       //option price
       let itemPrice = optionTickerQuote.depth.sell[0].price;
       let itemBidPrice = optionTickerQuote.depth.buy[0].price;
+      let isLiquid = true;
+      if(itemPrice-itemBidPrice > itemPrice/70){
+        isLiquid = false;
+      }
       let breakeven = item.strike+itemPrice;
       let timeValue = breakeven-stockPrice;
       let breakevenChg = Number((timeValue*100/stockPrice).toFixed(2));
@@ -80,10 +87,12 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
       // console.log(highlight);
       
       return {
+        isLiquid,
         stockInstrumentToken,
         itemBidPrice,
         lotSize,
         highlight,
+        strike:item.strike,
         investment,
         optionInstrumentToken,
         stockPrice,
@@ -103,9 +112,11 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
           && item.investment<Number(filters.maxInvestment)  
           && item.timeLoss < filters.maxTimeloss
           && item.itemPrice > 0
+          && item.isLiquid
           && filters.selectedStocks.includes(item.stock)
         }else{
           return item.itemPrice > 0 
+          && item.isLiquid
           && filters.selectedStocks.includes(item.stock)
         }
         
@@ -131,7 +142,7 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
     selector: 'tradingsymbol',
     sortable: true,
     grow: 1,
-    cell:row=><a className={"has-text-link"} href={`https://kite.zerodha.com/chart/ext/ciq/NSE/${row.tradingsymbol}/${row.optionInstrumentToken}`} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
+    cell:row=><a className={"has-text-link"} href={`https://kite.zerodha.com/chart/ext/ciq/NFO-OPT/${row.tradingsymbol}/${row.optionInstrumentToken}`} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
   },
   {
     name: 'Stock',   
@@ -149,26 +160,22 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
   },{
     name: 'Bid Price',   
     selector: 'itemBidPrice',
-    cell:row=><><a className="has-text-link" 
-      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${row.itemBidPrice+0.5}&variety=regular
-    `} target="_blank" rel="noreferrer">{row.itemBidPrice}</a></>
+    cell:row=><div><a className="has-text-link" 
+      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${row.itemBidPrice+0.5}:NFO&variety=regular
+    `} target="_blank" rel="noreferrer">{row.itemBidPrice}</a>
+    <br/>
+    <span className="is-size-7"><Price>{(row.stockPrice-(row.itemBidPrice+row.strike))*row.lotSize}</Price></span>
+    </div>
   },
   {
     name: 'Option Price',   
     selector: 'itemPrice',
-    cell:row=><><a className="has-text-link" 
-      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${((row.itemBidPrice+row.itemPrice)/2).toFixed(2)}&variety=regular
-    `} target="_blank" rel="noreferrer">{row.itemPrice}</a></>
-  },
-  {
-    name: 'Time Value',   
-    selector: 'timeValue',
-    cell:row=><Price reverseColoring>{row.timeValue}</Price>
-  },
-  {
-    name: 'Time Loss',   
-    selector: 'timeLoss',
-    cell:row=><Price reverseColoring>{row.timeLoss}</Price>
+    cell:row=><div><a className="has-text-link" 
+      href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${((row.itemBidPrice+row.itemPrice)/2).toFixed(1)}:NFO&variety=regular
+    `} target="_blank" rel="noreferrer">{row.itemPrice}</a>
+    <br />
+    <span className="is-size-7"><Price>{(row.stockPrice-(row.itemPrice+row.strike))*row.lotSize}</Price></span>
+    </div>
   },
   {
     name: 'Min Investment',   
@@ -211,9 +218,13 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
 
 export async function getServerSideProps(ctx){
   let {req} = ctx;
-  let {instrumentType,expiry} = req.query;
-
-  let tradingsymbols = ['VEDL','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','TATAPOWER'];
+  let {instrumentType,expiry,tradingsymbols} = req.query;
+  let defaultStocks = ['VEDL','TCS', 'INFY', 'TECHM', 'TATASTEEL', 'APOLLOHOSP','BAJAJFINSV', 'WIPRO','TATAPOWER'];
+  if(tradingsymbols){
+    tradingsymbols = defaultStocks.concat(tradingsymbols.split(","));
+  }else{
+    tradingsymbols = defaultStocks;
+  }
 
   let kc = await getKiteClient(req.cookies);
   let profile = await kc.getProfile();

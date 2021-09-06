@@ -125,12 +125,9 @@ export async function getServerSideProps(ctx) {
     return res.end()
   }
 
-  
-
-  
   return {
     props: {
-      user:user.toObject()
+      user:user?.toObject()||{}
     }
   }
 

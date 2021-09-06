@@ -101,11 +101,10 @@ export default function Table({ pagination=true,title,data,columns }) {
     <div>
       <DataTable
         conditionalRowStyles={conditionalRowStyles}
-        pagination={pagination}
-        paginationPerPage={10}
         responsive={true}
         compact={true}
         noHeader={true}
+        fixedHeader={true}
         columns={columns}
         data={data}
       />

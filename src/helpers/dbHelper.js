@@ -7,9 +7,17 @@ async function fetchOptions({
   expiry
 }) {
 
+  
 
   let query;
   if(Array.isArray(tradingsymbol)){
+    tradingsymbol = tradingsymbol.map(item=>{
+      if(item.indexOf("NIFTY") != -1){
+        return 'NIFTY'
+      }else{
+        return item
+      } 
+    })
     query = { name: {$in:tradingsymbol}, expiry: expiry, instrument_type: instrumentType }
   }else{
     tradingsymbol = tradingsymbol.split(" ")[0];
