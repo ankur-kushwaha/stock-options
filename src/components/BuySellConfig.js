@@ -22,7 +22,7 @@ function ConfigItem({
 export default function BuySellConfig({config,onUpdate,cleanOrders}) {
   
 
-  const {query,push,reload} = useRouter();
+  const {query} = useRouter();
   const [state,setState] = React.useState({
     ...config,
     tradingsymbol:query.tradingsymbol
@@ -66,8 +66,7 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
 
   const handleSymbolChange = ()=>{
     console.log(state.tradingsymbol);
-    window.location.href = `/BuySell?tradingsymbol=${state.tradingsymbol}`
-    
+    window.location.href = `/BuySell?tradingsymbol=${state.tradingsymbol}` 
   }
 
   return (

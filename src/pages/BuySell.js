@@ -29,14 +29,21 @@ export default function holdings({
   let [history,setHistory] = React.useState([]);
   let defaultConfig = {
     maxOrder: userProfile.configs.maxOrder||3,
+    maxShortOrder: userProfile.configs.maxShortOrder||1,
     minTarget:  userProfile.configs.minTarget||10,
-    quantity : userProfile.configs.quantity||100
+    quantity : userProfile.configs.quantity||100,
+    isShortOrderEnabled:false
   }
   const [config,setConfig] = React.useState(defaultConfig);
 
-  let orders = [];
+  let orders = [],shortOrders=[];
+  
   if(userProfile.orders){
     orders = userProfile.orders.filter(item=>item.tradingsymbol == tradingsymbol)
+  }
+
+  if(userProfile.shortOrders){
+    shortOrders = userProfile.orders.filter(item=>item.tradingsymbol == tradingsymbol)
   }
   
   let [state,setState] = React.useState({
@@ -46,7 +53,7 @@ export default function holdings({
     profitArr:[],
     tradeCount:0,
     orders: orders,
-    
+    shortOrders
   });
 
   React.useEffect(()=>{
@@ -102,6 +109,7 @@ export default function holdings({
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
     let orders = [...state.orders];
+    let updatedShortOrders = [...state.shortOrders];
 
     let newTrend = item.signal=='GREEN'?"UP":"DOWN";
     
@@ -114,6 +122,7 @@ export default function holdings({
     }
 
     let hasOrdersUpdated = false;
+    
 
     if(trendReverse){
       if(newTrend == 'DOWN'){
@@ -144,9 +153,23 @@ export default function holdings({
           }else{
             console.log(`Sell order blocked due to either order already closed ${order.isClosed} or sell diff(${item.close - order.average_price}) bw itemClose(${item.close}) and orderClose(${order.average_price}) is less than ${config.minTarget}% of orderClose(${order.average_price}) i.e (${(config.minTarget * order.average_price)/100})`)
           }
+
+          
         }
         //Remove executed orders
         orders = orders.filter(item=>!executedOrders.includes(item.order_id));
+
+        if(config.isShortOrderEnabled && updatedShortOrders.length < config.maxShortOrder){
+          console.log('Triggering short order...')
+          let currOrder = await createOrder(item,{
+            transactionType:'SELL',
+            quantity: config.quantity
+          });
+          if(currOrder){
+            updatedShortOrders.push(currOrder);
+            hasOrdersUpdated = true;
+          }
+        }
 
       }
 
@@ -188,6 +211,26 @@ export default function holdings({
         }else{
           console.log("BUY order blocked as there are open orders",orders)
         }
+
+        
+        if(config.isShortOrderEnabled){
+          let executedOrders=[]
+          for(let order of updatedShortOrders){
+            if((order.average_price - item.close) > ((config.minTarget * item.close)/100)){
+              console.log('Triggerring short cover...',order)
+              let currOrder = await createOrder(item,{
+                transactionType:'BUY',
+                quantity:order.quantity
+              });
+              if(!currOrder){
+                console.error('Short cover order failed');
+              }
+              executedOrders.push(order.order_id);
+              hasOrdersUpdated = true;
+            }
+          }
+          updatedShortOrders = updatedShortOrders.filter(item=>!executedOrders.includes(item.order_id))
+        }
             
       } 
     }
@@ -200,6 +243,7 @@ export default function holdings({
       trendReverse,
       profit,
       orders,
+      shortOrders:updatedShortOrders,
       profitArr
     })
 
@@ -220,12 +264,15 @@ export default function holdings({
 
   },[state.hasOrdersUpdated])
 
-  async function createOrder(item){
+  async function createOrder(item,{
+    transactionType,
+    quantity
+  }={}){
     
     let orderId = await createOrder2({  
-      transactionType : "SELL",
+      transactionType : transactionType||"SELL",
       tradingsymbol,
-      quantity : config.quantity,
+      quantity : quantity || config.quantity,
       price : config.marketOrder ? 'MARKET' : item.actual.close
     });
 
@@ -337,20 +384,28 @@ export default function holdings({
       
       </div>
 
-      <div className="container mt-5">
+      {/* <div className="container mt-5">
 
         <div className="columns">
           <div className="column">
             <Table title={"Orders(Zerodha)"} columns={columns} data={state.positions}></Table>
           </div>
         </div>
-      </div> 
+      </div>  */}
 
       <div className="container mt-5">
 
         <div className="columns">
           <div className="column">
             <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.orders}></Table>
+          </div>
+        </div>
+      </div> 
+      <div className="container mt-5">
+
+        <div className="columns">
+          <div className="column">
+            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.shortOrders}></Table>
           </div>
         </div>
       </div> 
