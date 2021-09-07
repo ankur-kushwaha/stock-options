@@ -51,7 +51,7 @@ export default function useZerodha(){
       //   url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=1&transactionType=BUY`;
       // }
     
-      return await Promise.resolve(1234);
+      return await Promise.resolve(210907203146196);
 
     }else{
       let res = await fetch(url).then(res=>res.json());

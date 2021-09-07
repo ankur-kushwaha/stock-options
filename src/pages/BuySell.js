@@ -154,8 +154,8 @@ export default function BuySell({
             }
           }
           //Remove executed orders
+          closedOrders = closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
           orders = orders.filter(item=>!executedOrders.includes(item.order_id));
-          closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
         }
         if(config.isBearish && updatedShortOrders.length < config.maxShortOrder){
           log('Brearish flag is enabled, Triggering short order...');
