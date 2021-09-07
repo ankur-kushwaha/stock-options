@@ -382,7 +382,7 @@ export default function BuySell({
   },{
     name:'LTP',
     selector:'price',
-    cell:()=>{state.closePrice}
+    cell:()=><>{state.closePrice}</>
   },{
     name:'Buy Price',
     selector:'average_price'
