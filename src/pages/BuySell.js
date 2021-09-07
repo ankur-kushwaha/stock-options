@@ -384,7 +384,6 @@ export default function BuySell({
 
   function log(...args){
     console.log(args);
-    setLogs([...logs,...args]);
   }
 
   return (
