@@ -248,7 +248,8 @@ export default function BuySell({
       profit,
       orders,
       shortOrders:updatedShortOrders,
-      profitArr
+      profitArr,
+      closePrice: item.actual.close
     })
 
   },[history.length])
@@ -355,7 +356,13 @@ export default function BuySell({
     selector:'quantity'
   },{
     name:'price',
-    selector:'price'
+    selector:'price',
+    cell:(row)=><div>{state.closePrice}
+      <br/>
+      <div className="is-size-7">
+        {(state.closePrice - row.average_price)* row.quantity} ({ (state.closePrice - row.average_price)*100/row.average_price }%)
+      </div>
+    </div>
   },{
     name:'average_price',
     selector:'average_price'

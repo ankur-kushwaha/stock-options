@@ -6,6 +6,7 @@ import { getKiteClient } from '../helpers/kiteConnect';
 import currencyFormatter from 'currency-formatter';
 import getTicks from '../helpers/getTicks';
 import Price from '../components/Price';
+import Head from 'next/head'
 
 
 export default function holdings({
@@ -88,9 +89,9 @@ export default function holdings({
       }
 
       if(item.quantity > 0 && item.tradingsymbol.endsWith('PE')){
-        breakeven = "0"
-        breakevenChg="0"
-        expiryPnL = ""
+        breakeven = 0
+        breakevenChg=0
+        expiryPnL = 0
       }
 
       
@@ -220,6 +221,9 @@ export default function holdings({
 
   return (
     <div >
+      <Head>
+        <title>PnL {totalProfit}</title>
+      </Head>
       <Header userProfile={userProfile} tab="positions"></Header>
 
       <div className="container mt-4">
