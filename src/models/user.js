@@ -62,11 +62,23 @@ var user = new Schema({
       "type": "Number"
     },"quantity": {
       "type": "Number"
-    },"marketOrder": {
+    },
+    "marketOrder": {
+      "type": "Boolean"
+    },
+    "isBullish": {
+      "type": "Boolean"
+    },
+    "isBearish": {
       "type": "Boolean"
     }
   },
   "orders":{
+    "type": [
+      "Mixed"
+    ]
+  },
+  "shortOrders":{
     "type": [
       "Mixed"
     ]

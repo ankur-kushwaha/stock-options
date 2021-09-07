@@ -7,7 +7,7 @@ export default async function createOrder(req, res) {
         
   let kt = await getKiteClient(req.cookies);
 
-  let {tradingsymbol,quantity,price,transactionType} = req.query;
+  let {tradingsymbol,quantity,price,transactionType,variety} = req.query;
 
   let reqData;
   
@@ -36,11 +36,9 @@ export default async function createOrder(req, res) {
 
   console.log('Creating order with', reqData);
         
-  kt.placeOrder("amo",reqData).then(data=>{
-    console.log(data)
+  kt.placeOrder(variety||"regular",reqData).then(data=>{
+    console.log('Order placed',data)
     
-    // res.writeHead(307, { Location: `https://kite.zerodha.com/orders`})
-    // return res.end();
     return res.status(200).json({ data })
   })
     .catch(data=>{

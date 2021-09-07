@@ -79,12 +79,29 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
       <ConfigItem type="number" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
       <ConfigItem type="number" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
       <div>
-
         <label className="checkbox">
           <input checked={state.marketOrder} type="checkbox" onChange={handleChange('marketOrder')}/>
           &nbsp;
           <span className="is-size-7">
             Trigger at Market
+          </span>
+        </label>
+      </div>
+      <div>
+        <label className="checkbox">
+          <input checked={state.isBullish} type="checkbox" onChange={handleChange('isBullish')}/>
+          &nbsp;
+          <span className="is-size-7">
+            Bullish Market
+          </span>
+        </label>
+      </div>
+      <div>
+        <label className="checkbox">
+          <input checked={state.isBearish} type="checkbox" onChange={handleChange('isBearish')}/>
+          &nbsp;
+          <span className="is-size-7">
+            Bearish Market
           </span>
         </label>
       </div>

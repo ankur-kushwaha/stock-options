@@ -4,8 +4,6 @@ import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
 import { getKiteClient } from '../helpers/kiteConnect';
 import { postData } from '../helpers';
-import getTicks from '../helpers/getTicks';
-import Price from '../components/Price';
 import { useRouter } from 'next/router'
 import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
@@ -16,23 +14,23 @@ function sleep(ms) {
   });
 }   
 
-
-export default function holdings({
-  positions,  
+export default function BuySell({
   userProfile
 }) {
   let {query} = useRouter();
   let {tradingsymbol} = query;
 
   let {createOrder2,getHistory} = useZerodha();
-  // let [stockTrades,setStockTrades] = React.useState(trades);
   let [history,setHistory] = React.useState([]);
+  let [logs,setLogs] = React.useState([]);
   let defaultConfig = {
-    maxOrder: userProfile.configs.maxOrder||3,
-    maxShortOrder: userProfile.configs.maxShortOrder||1,
-    minTarget:  userProfile.configs.minTarget||10,
-    quantity : userProfile.configs.quantity||100,
-    isShortOrderEnabled:false
+    maxOrder: userProfile.configs.maxOrder || 3,
+    maxShortOrder: userProfile.configs.maxShortOrder || 1,
+    minTarget:  userProfile.configs.minTarget || 10,
+    quantity : userProfile.configs.quantity || 100,
+    isBullish: !!userProfile.configs.isBullish,
+    isBearish: !!userProfile.configs.isBearish,
+    marketOrder: !!userProfile.configs.marketOrder
   }
   const [config,setConfig] = React.useState(defaultConfig);
 
@@ -48,6 +46,7 @@ export default function holdings({
   
   let [state,setState] = React.useState({
     positions:[],
+    hasOrdersUpdated:0,
     currTrend:"",
     profit:0,
     profitArr:[],
@@ -56,9 +55,7 @@ export default function holdings({
     shortOrders
   });
 
-  React.useEffect(()=>{
-
-    
+  React.useEffect(()=>{ 
 
     async function fetchHistory(){
 
@@ -96,15 +93,15 @@ export default function holdings({
   },[config.shouldRun])
 
   React.useEffect(async ()=>{
-    console.log("-----------------");
+    log("-----------------");
     
     if(history.length == 0){
-      console.log('Returning as history length is 0')
+      log('Returning as history length is 0');
       return ;
     }
 
     let item = history[history.length-1];
-    console.log('history updated, last quote: ',item);
+    log('history updated, last quote: ',item);
 
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
@@ -115,59 +112,62 @@ export default function holdings({
     
     let trendReverse = false;
     if(state.currTrend && (state.currTrend != newTrend)){
-      console.log("Trend reversed ", state.currTrend,newTrend);
+      log("Trend reversed ", state.currTrend,newTrend);
       trendReverse = true;
     }else{
-      console.log("Trend continuing... ", newTrend);
+      log("Trend continuing... ", newTrend);
     }
 
-    let hasOrdersUpdated = false;
+    let hasOrdersUpdated = state.hasOrdersUpdated;
     
 
     if(trendReverse){
       if(newTrend == 'DOWN'){
-      //sell signal
-      //sell all whose price is less than buy price;
+        log('Trend reversed and moving downwards',item);
+        //sell signal
+        //sell all whose price is less than buy price;
 
-        console.log("New trend is DOWN, checking open orders ", item, orders);
-      
-        item.order=[];
+        if(config.isBullish){
+
+          log("Bullish flag is enabled, checking open orders ", orders);
         
-        let executedOrders = [];
-        for(let order of orders){
-          if((item.close - order.average_price) > ((config.minTarget * order.average_price)/100)){
-            console.log('Triggering Sell order for', order);
+          let executedOrders = [];
+          for(let order of orders){
+            if((item.close - order.average_price) > ((config.minTarget * order.average_price)/100)){
+              log('Triggering Sell order for', order);
             
             
-            hasOrdersUpdated = true;
-            executedOrders.push(order.order_id);
+              hasOrdersUpdated++;
+              executedOrders.push(order.order_id);
             
-            let currOrder = await createOrder(item);
+              let currOrder = await createOrder(item);
 
-            let currProfit = currOrder.average_price - order.average_price;
-            order.profit = currProfit;
-            profit += currProfit;
+              let currProfit = currOrder.average_price - order.average_price;
+              order.profit = currProfit;
+              profit += currProfit;
 
-            profitArr.push(currProfit);
+              profitArr.push(currProfit);
 
-          }else{
-            console.log(`Sell order blocked due to either order already closed ${order.isClosed} or sell diff(${item.close - order.average_price}) bw itemClose(${item.close}) and orderClose(${order.average_price}) is less than ${config.minTarget}% of orderClose(${order.average_price}) i.e (${(config.minTarget * order.average_price)/100})`)
+            }else{
+              log(`Sell order blocked due to either order already closed ${order.isClosed} or sell diff(${item.close - order.average_price}) bw itemClose(${item.close}) and orderClose(${order.average_price}) is less than ${config.minTarget}% of orderClose(${order.average_price}) i.e (${(config.minTarget * order.average_price)/100})`);
+            }
           }
-
-          
+          //Remove executed orders
+          orders = orders.filter(item=>!executedOrders.includes(item.order_id));
         }
-        //Remove executed orders
-        orders = orders.filter(item=>!executedOrders.includes(item.order_id));
-
-        if(config.isShortOrderEnabled && updatedShortOrders.length < config.maxShortOrder){
-          console.log('Triggering short order...')
+        if(config.isBearish && updatedShortOrders.length < config.maxShortOrder){
+          log('Brearish flag is enabled, Triggering short order...');
           let currOrder = await createOrder(item,{
             transactionType:'SELL',
             quantity: config.quantity
           });
           if(currOrder){
             updatedShortOrders.push(currOrder);
-            hasOrdersUpdated = true;
+            hasOrdersUpdated++;
+          }
+        }else{
+          if(config.isBearish){
+            log('Short order capacity reached', updatedShortOrders);
           }
         }
 
@@ -175,49 +175,51 @@ export default function holdings({
 
       if( newTrend == 'UP' ){
       //Buy signal
+        log('Trend reversed and moving upwards',item);
+
+        if(config.isBullish){
         
-        console.log("New trend is UP, checking open orders and maxOrders ", JSON.stringify(orders),config.maxOrder);
+          log("Bullish flag is enabled, checking open orders and maxOrders ", orders);
         
-        if(orders.length < config.maxOrder){
-          console.log('Triggerring BUY order....')
-          
-          
+          if(orders.length < config.maxOrder){
+            log('Triggerring BUY order....');
 
-          let orderId = await createOrder2({
-            transactionType:"BUY",
-            tradingsymbol,
-            quantity:config.quantity,
-            price: config.marketOrder?'MARKET':item.actual.close
-          });
+            let orderId = await createOrder2({
+              transactionType:"BUY",
+              tradingsymbol,
+              quantity:config.quantity,
+              price: config.marketOrder?'MARKET':item.actual.close
+            });
 
-          if(orderId == null){
-            console.log("Create order failed");
-            return ;
+            if(orderId == null){
+              log("Create order failed");
+              return ;
+            }
+
+            await sleep(1000);
+
+            let allOrders = await fetch('/api/getOrders').then(res=>res.json())
+            let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
+            if(!currOrder){
+              log('Invalid OrderID');
+              return;
+            }
+            log(currOrder);
+            tradeCount++;
+            orders.push(currOrder);
+            hasOrdersUpdated++;
+
+          }else{
+            log("BUY orders limit reached",orders);
           }
-
-          await sleep(1000);
-
-          let allOrders = await fetch('/api/getOrders').then(res=>res.json())
-          let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-          if(!currOrder){
-            console.log('Invalid OrderID');
-            return;
-          }
-          console.log(currOrder);
-          tradeCount++;
-          orders.push(currOrder);
-          hasOrdersUpdated = true;
-
-        }else{
-          console.log("BUY order blocked as there are open orders",orders)
         }
-
         
-        if(config.isShortOrderEnabled){
+        if(config.isBearish){
+          log('Bearish flag is enabled, checking open short orders', updatedShortOrders);
           let executedOrders=[]
           for(let order of updatedShortOrders){
             if((order.average_price - item.close) > ((config.minTarget * item.close)/100)){
-              console.log('Triggerring short cover...',order)
+              log('Triggerring short cover...',order);
               let currOrder = await createOrder(item,{
                 transactionType:'BUY',
                 quantity:order.quantity
@@ -226,7 +228,9 @@ export default function holdings({
                 console.error('Short cover order failed');
               }
               executedOrders.push(order.order_id);
-              hasOrdersUpdated = true;
+              hasOrdersUpdated++;
+            }else{
+              log('Order not eligible for covering',order);
             }
           }
           updatedShortOrders = updatedShortOrders.filter(item=>!executedOrders.includes(item.order_id))
@@ -250,7 +254,7 @@ export default function holdings({
   },[history.length])
   
   React.useEffect(async ()=>{
-    if(state.orders.length ==0){
+    if(!state.orders.length && !state.shortOrders.length){
       return;
     }
     let response = await fetch('/api/getPositions').then(res=>res.json());
@@ -260,7 +264,7 @@ export default function holdings({
       positions
     })
 
-    await save()
+    await save();
 
   },[state.hasOrdersUpdated])
 
@@ -283,7 +287,6 @@ export default function holdings({
     
     return currOrder;
   }
-
 
   const columns = [{
     name:'tradingsymbol',
@@ -313,17 +316,19 @@ export default function holdings({
 
   const save = React.useCallback(async function save({
     newConfig,
-    newOrders
+    newOrders,
+    newShortOrders
   }={}){
     let data = {
       userId:userProfile.user_id,
       configs:newConfig||config,
-      orders:newOrders||state.orders
+      orders:newOrders||state.orders,
+      shortOrders:newShortOrders||state.shortOrders
     };
-    console.log('Saving user',data)
+    log('Saving user',data);
     await postData('/api/updateUser',data);
     
-  },[config,state.orders])
+  },[config,state.orders,state.shortOrders])
 
   async function handleUpdate(config){
     setConfig(config);
@@ -358,9 +363,9 @@ export default function holdings({
 
   async function cleanOrders(type){
     
-    let orders = [];
     await save({
-      newOrders:orders
+      newOrders:[],
+      newShortOrders:[]
     })
 
     setState({
@@ -369,20 +374,43 @@ export default function holdings({
     })
   }
 
+  function log(...args){
+    console.log(args);
+    setLogs([...logs,...args]);
+  }
+
   return (
     <div >
       {/* <button onClick={save}>Save</button> */}
       <Header userProfile={userProfile} tab="positions"></Header>
 
       <div className="container mt-4">
+        <div className="columns">
+          <div className="column is-2">
+            <article className={"message "+(config.shouldRun?'is-success':"is-danger")}>
+              <div className="message-body">
+                <BuySellConfig config={config} cleanOrders={cleanOrders} onUpdate={handleUpdate}></BuySellConfig>
+              </div>
+            </article>
+          </div>
 
-        <article className={"message "+(config.shouldRun?'is-success':"is-danger")}>
+          <div className="column is-10">
+            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.orders}></Table>
+            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.shortOrders}></Table>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mt-6">
+        <article className={"message is-info"}>
           <div className="message-body">
-            <BuySellConfig config={config} cleanOrders={cleanOrders} onUpdate={handleUpdate}></BuySellConfig>
+            {logs.map((log,i)=><div className=" control is-size-7" key={i}>{JSON.stringify(log,null,2)}<br/><br/></div>)}
           </div>
         </article>       
-      
+
       </div>
+
+      
 
       {/* <div className="container mt-5">
 
@@ -393,22 +421,9 @@ export default function holdings({
         </div>
       </div>  */}
 
-      <div className="container mt-5">
+     
 
-        <div className="columns">
-          <div className="column">
-            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.orders}></Table>
-          </div>
-        </div>
-      </div> 
-      <div className="container mt-5">
-
-        <div className="columns">
-          <div className="column">
-            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.shortOrders}></Table>
-          </div>
-        </div>
-      </div> 
+     
       
     </div>
   )
@@ -424,6 +439,7 @@ export async function getServerSideProps(ctx) {
   let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
   userProfile.configs = dbUser.configs;
   userProfile.orders = dbUser.orders;
+  userProfile.shortOrders = dbUser.shortOrders;
 
   let positions = await kc.getPositions();
 
