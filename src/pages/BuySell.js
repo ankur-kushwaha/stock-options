@@ -65,8 +65,9 @@ export default function BuySell({
       }
     }
 
-    let interval = setInterval(fetchHistory,10000);
+    let interval;
     if(config.shouldRun){
+      interval = setInterval(fetchHistory,10000);
       fetchHistory();
     }
     return ()=>{
@@ -277,32 +278,6 @@ export default function BuySell({
     return currOrder;
   }
 
-  const columns = [{
-    name:'tradingsymbol',
-    selector:'tradingsymbol'
-  },
-  
-  {
-    name:'buy_price',
-    selector:'buy_price'
-  },{
-    name:'sell_price',
-    selector:'sell_price'
-  },{
-    name:'average_price',
-    selector:'average_price'
-  },{
-    name:'quantity',
-    selector:'quantity'
-  },{
-    name:'status',
-    selector:'status'
-  },{
-    name:'pnl',
-    selector:'pnl',
-    // cell:row=>(<button onClick={sellStock(row)}>Sell</button>)
-  }]
-
   const save = React.useCallback(async function save({
     newConfig,
     newOrders,
@@ -310,9 +285,6 @@ export default function BuySell({
   }={}){
     let data = {
       userId:userProfile.user_id,
-      configs:newConfig||config,
-      orders:newOrders||state.orders,
-      shortOrders:newShortOrders||state.shortOrders,
       tradingsymbol,
       session:{
         configs:newConfig||config,
@@ -445,11 +417,6 @@ export default function BuySell({
         </article>       
 
       </div>
-
-    
-     
-
-     
       
     </div>
   )
