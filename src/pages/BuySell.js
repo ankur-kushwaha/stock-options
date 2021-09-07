@@ -60,9 +60,9 @@ export default function BuySell({
     
       let map = {
         "21909":"09SEP21",
-        "219016":"16SEP21",
-        "219023":"23SEP21",
-        "219030":"30SEP21"
+        "21916":"16SEP21",
+        "21923":"23SEP21",
+        "21930":"30SEP21"
       }
 
       let out = tradingsymbol.match(regex);
