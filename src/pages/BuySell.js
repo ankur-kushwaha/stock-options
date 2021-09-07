@@ -7,6 +7,7 @@ import { postData } from '../helpers';
 import { useRouter } from 'next/router'
 import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
+import Head from 'next/head'
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -388,6 +389,11 @@ export default function BuySell({
 
   return (
     <div >
+      <Head>
+        <title>
+          {config.shouldRun?'Running...':'Stopped'}
+        </title>
+      </Head>
       {/* <button onClick={save}>Save</button> */}
       <Header userProfile={userProfile} tab="positions"></Header>
 

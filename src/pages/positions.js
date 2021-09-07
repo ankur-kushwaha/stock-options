@@ -222,7 +222,7 @@ export default function holdings({
   return (
     <div >
       <Head>
-        <title>PnL {totalProfit}</title>
+        <title>PnL: {totalProfit.toFixed(2)}</title>
       </Head>
       <Header userProfile={userProfile} tab="positions"></Header>
 
