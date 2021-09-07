@@ -75,7 +75,7 @@ export default function useZerodha(){
     if(dev){
       return await getMockHistory();
     }else{
-      return await fetch(`/api/getDayHistory-v2?instruments=${targetTradingsymbol}&exchange=NFO`)
+      return await fetch(`/api/getDayHistory-v2?instruments=${targetTradingsymbol}`)
         .then(res=>res.json())
     }
   }

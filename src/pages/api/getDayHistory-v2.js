@@ -20,7 +20,7 @@ function sleep(ms) {
 
 export default async function handler(req, res) {
   await smart_api.generateSession("A631449", "Kushwaha1@")
-  let {exchange,instruments}  = req.query
+  let {instruments}  = req.query
 
   instruments = instruments.split(",").filter(item=>item.indexOf('BE')==-1)
   
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
 
   let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':instruments[0]});
   let token = zerodhaInstrument.toObject().exchange_token;
+  let exchange = zerodhaInstrument.toObject().exchange;
 
   let doc = (await AngelInstrument.findOne({'token':token})).toObject();
 
@@ -68,76 +69,6 @@ export default async function handler(req, res) {
     prev = history[history.length-1];
   }
 
-  // let profit=0;
-  // let profitArr=[];
-  // let tradeCount = 0;
-
-  // let currTrend = history[0].signal=='GREEN'?"UP":"DOWN";
-  // let orders = [];
-  // let maxOrder = 5;
-  // for(let item of history){
-  //   if(currTrend == 'UP' && item.signal == 'RED'){
-  //     //sell signal
-  //     //sell all whose price is less than buy price;
-
-  //     item.order=[];
-  //     for(let order of orders){
-  //       if(!order.isClosed && (item.close - order.close) > (0.2 * order.close)){
-  //         item.order.push(order.close);
-  //         order.isClosed = true;
-  //         order.closedTick = item;
-  //         let currProfit = item.actual.close - order.actual.close;
-  //         order.profit = currProfit;
-  //         profit += currProfit;
-  //         profitArr.push(currProfit);
-  //       }
-  //     }
-  //   } 
-
-  //   if(currTrend == 'DOWN' && item.signal == 'GREEN'){
-  //     //Buy signal
-  //     if(orders.filter(item=>!item.isClosed).length < maxOrder){
-  //       orders.push(item);
-  //       tradeCount++;
-  //       item.order='BUY'
-  //     }
-      
-  //   } 
-
-  //   currTrend = item.signal=='GREEN'?"UP":"DOWN";
-  // }
-
-  // //sell the remaining orders
-  // let item = history[history.length-1];
-  // for(let order of orders){
-  //   if(!order.isClosed){
-  //     // item.order.push(order.close);
-  //     order.isClosed = true;
-  //     order.closedTick = item;
-  //     let currProfit = item.actual.close - order.actual.close;
-  //     order.profit = currProfit;
-  //     profit += currProfit;
-  //     profitArr.push(currProfit);
-  //   }
-  // }
-
-  // // console.log(history);
-
-  // let openOrders =  orders.filter(item=>!item.isClosed)
-  // let closedOrders =  orders.filter(item=>item.isClosed)
-
-  // let buyAverage = (orders.map(item=>!item.isClosed).reduce((a,b)=>a+b,0))/orders.length;
-  // let closePrice = history[0].close;
-  
-
-  // res.status(200).json({profit,tradeCount,orders:{
-  //   buyAverage,
-  //   closePrice
-  // },
-  // profitArr,
-  // openOrders,
-  // closedOrders
-  // });
     
   res.status(200).json({history})
 }
