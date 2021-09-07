@@ -7,7 +7,6 @@ export default async function handler(req, res) {
   let {userId,configs,orders,shortOrders,session,tradingsymbol} = req.body;
   let user = await  User.findOne({user_id:userId });
   
-  console.log(user,{user_id:userId });
   user.configs = configs;
   user.orders = orders;
   user.shortOrders = shortOrders;

@@ -99,7 +99,7 @@ export default function BuySell({
     }
 
     let item = history[history.length-1];
-    log('history updated, last quote: ',item.close ,item);
+    log('history updated, last quote: ',item.actual.close ,item);
 
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
@@ -151,7 +151,7 @@ export default function BuySell({
               profitArr.push(currProfit);
 
             }else{
-              log(`Sell order blocked due to either order already closed ${order.isClosed} or sell diff(${item.close - order.average_price}) bw itemClose(${item.close}) and orderClose(${order.average_price}) is less than ${config.minTarget}% of orderClose(${order.average_price}) i.e (${(config.minTarget * order.average_price)/100})`);
+              log(`Sell order blocked, Min Change: ${(config.minTarget * order.average_price)/100}, Current Chg: ${item.close - order.average_price}, BuyPrice: ${order.average_price}, LTP: ${item.close}, MinTarget: ${config.minTarget}`);
             }
           }
           //Remove executed orders
@@ -348,10 +348,12 @@ export default function BuySell({
 
   let closedOrderColumns = [{
     name:'tradingsymbol',
-    selector:'tradingsymbol'
+    selector:'tradingsymbol',
+    grow:1
   },{
     name:'order_id',
-    selector:'order_id'
+    selector:'order_id',
+    grow:1
   },{
     name:'buyPrice',
     selector:'buyPrice'
@@ -364,35 +366,33 @@ export default function BuySell({
   }]
 
   let orderColumns=[{
-    name:'tradingsymbol',
-    selector:'tradingsymbol'
+    name:'Tradingsymbol',
+    selector:'tradingsymbol',
+    wrap:true
   },{
-    name:'order_id',
-    selector:'order_id'
+    name:'Order ID',
+    selector:'order_id',
+    grow:1
   },{
-    name:'status',
-    selector:'status'
+    name:'Timestamp',
+    selector:'order_timestamp',
+    wrap:true
   },{
-    name:'order_timestamp',
-    selector:'order_timestamp'
-  },{
-    name:'order_type',
-    selector:'order_type'
-  },{
-    name:'quantity',
+    name:'Quantity',
     selector:'quantity'
   },{
-    name:'price',
+    name:'LTP',
     selector:'price',
-    cell:(row)=><div>{state.closePrice}
-      <br/>
-      <div className="is-size-7">
-        <Price>{row.pnl}</Price> (<Price>{row.pnlPct}</Price>)
-      </div>
-    </div>
   },{
-    name:'average_price',
+    name:'Buy Price',
     selector:'average_price'
+  },{
+    name:'PnL',
+    selector:'pnl',
+    cell:(row)=>
+      <div>
+        <Price>{row.pnl}</Price><br/> (<Price>{row.pnlPct}</Price>)
+      </div>
   }];
 
   async function cleanOrders(type){
