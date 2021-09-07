@@ -91,7 +91,7 @@ export default function BuySell({
   },[config.shouldRun])
 
   React.useEffect(async ()=>{
-    log("-----------------");
+    log("-----------------------------------------");
     
     if(history.length == 0){
       log('Returning as history length is 0');
@@ -132,9 +132,8 @@ export default function BuySell({
         
           let executedOrders = [];
           for(let order of orders){
-            if((item.close - order.average_price) > ((config.minTarget * order.average_price)/100)){
+            if((item.actual.close - order.average_price) > ((config.minTarget * order.average_price)/100)){
               log('Triggering Sell order for', order);
-            
             
               hasOrdersUpdated++;
               executedOrders.push(order.order_id);
@@ -151,7 +150,7 @@ export default function BuySell({
               profitArr.push(currProfit);
 
             }else{
-              log(`Sell order blocked, Min Change: ${(config.minTarget * order.average_price)/100}, Current Chg: ${item.close - order.average_price}, BuyPrice: ${order.average_price}, LTP: ${item.close}, MinTarget: ${config.minTarget}`);
+              log(`Sell order blocked, Min Change: ${(config.minTarget * order.average_price)/100}, Current Chg: ${item.actual.close - order.average_price}, BuyPrice: ${order.average_price}, LTP: ${item.actual.close}, MinTarget: ${config.minTarget}`);
             }
           }
           //Remove executed orders
@@ -383,6 +382,7 @@ export default function BuySell({
   },{
     name:'LTP',
     selector:'price',
+    cell:()=>{state.closePrice}
   },{
     name:'Buy Price',
     selector:'average_price'
