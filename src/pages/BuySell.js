@@ -1,5 +1,6 @@
 import React from 'react'
 import Header from '../components/Header';
+import Price from '../components/Price';
 import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
 import { getKiteClient } from '../helpers/kiteConnect';
@@ -24,6 +25,7 @@ export default function BuySell({
   let {createOrder2,getHistory} = useZerodha();
   let [history,setHistory] = React.useState([]);
   let [logs,setLogs] = React.useState([]);
+
   let defaultConfig = {
     maxOrder: userProfile.configs.maxOrder || 3,
     maxShortOrder: userProfile.configs.maxShortOrder || 1,
@@ -34,16 +36,6 @@ export default function BuySell({
     marketOrder: !!userProfile.configs.marketOrder
   }
   const [config,setConfig] = React.useState(defaultConfig);
-
-  let orders = [],shortOrders=[];
-  
-  if(userProfile.orders){
-    orders = userProfile.orders.filter(item=>item.tradingsymbol == tradingsymbol)
-  }
-
-  if(userProfile.shortOrders){
-    shortOrders = userProfile.shortOrders.filter(item=>item.tradingsymbol == tradingsymbol)
-  }
   
   let [state,setState] = React.useState({
     positions:[],
@@ -52,9 +44,13 @@ export default function BuySell({
     profit:0,
     profitArr:[],
     tradeCount:0,
-    orders: orders,
-    shortOrders
+    orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
+    shortOrders: userProfile.shortOrders?.filter(item=>item.tradingsymbol == tradingsymbol)
   });
+
+  React.useEffect(()=>{
+    log(userProfile);
+  },[])
 
   React.useEffect(()=>{ 
 
@@ -102,7 +98,7 @@ export default function BuySell({
     }
 
     let item = history[history.length-1];
-    log('history updated, last quote: ',item);
+    log('history updated, last quote: ',item.close ,item);
 
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
@@ -325,7 +321,13 @@ export default function BuySell({
       userId:userProfile.user_id,
       configs:newConfig||config,
       orders:newOrders||state.orders,
-      shortOrders:newShortOrders||state.shortOrders
+      shortOrders:newShortOrders||state.shortOrders,
+      tradingsymbol,
+      session:{
+        configs:newConfig||config,
+        orders:newOrders||state.orders,
+        shortOrders:newShortOrders||state.shortOrders,
+      }
     };
     log('Saving user',data);
     await postData('/api/updateUser',data);
@@ -361,7 +363,7 @@ export default function BuySell({
     cell:(row)=><div>{state.closePrice}
       <br/>
       <div className="is-size-7">
-        {((state.closePrice - row.average_price)* row.quantity).toFixed(2)} ({((state.closePrice - row.average_price)*100/row.average_price ).toFixed(2)}%)
+        <Price>{row.pnl}</Price> (<Price>{row.pnlPct}</Price>)
       </div>
     </div>
   },{
@@ -386,11 +388,19 @@ export default function BuySell({
     console.log(args);
   }
 
+  let totalProfit = 0;
+  let orders = state.orders.map(row=>{
+    row.pnl = (state.closePrice - row.average_price)* row.quantity;
+    totalProfit += row.pnl;
+    row.pnlPct = (state.closePrice - row.average_price)*100/row.average_price 
+    return row;
+  });
+
   return (
     <div >
       <Head>
         <title>
-          {config.shouldRun?'Running...':'Stopped'}
+          {"PnL:"+totalProfit+" | "+(config.shouldRun?'Running... ':'Stopped')}
         </title>
       </Head>
       {/* <button onClick={save}>Save</button> */}
@@ -407,7 +417,7 @@ export default function BuySell({
           </div>
 
           <div className="column is-10">
-            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.orders}></Table>
+            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={orders}></Table>
             <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.shortOrders}></Table>
           </div>
         </div>
@@ -449,9 +459,22 @@ export async function getServerSideProps(ctx) {
   kc = await getKiteClient(req.cookies);
   userProfile = await kc.getProfile();
   let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
-  userProfile.configs = dbUser.configs;
-  userProfile.orders = dbUser.orders;
-  userProfile.shortOrders = dbUser.shortOrders;
+
+  let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];
+  // console.log(123,session)
+
+  userProfile.configs = session?.data.configs||dbUser.configs;
+  if(session?.data.orders.length){
+    userProfile.orders = session?.data.orders
+  }else{
+    userProfile.orders = dbUser.orders;
+  }
+  if(session?.data.shortOrders.length){
+    userProfile.shortOrders = session?.data.shortOrders
+  }else{
+    userProfile.shortOrders = dbUser.shortOrders;
+  }
+  
 
   let positions = await kc.getPositions();
 

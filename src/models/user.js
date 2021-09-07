@@ -82,7 +82,13 @@ var user = new Schema({
     "type": [
       "Mixed"
     ]
-  }
+  },
+  "sessions":{
+    "type": [
+      "Mixed"
+    ]
+  },
+  
 },{
   toObject: {
     transform: function (doc, ret) {
