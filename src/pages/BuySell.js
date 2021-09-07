@@ -28,13 +28,13 @@ export default function BuySell({
 
   let defaultConfig = {
     tradingsymbol,
-    maxOrder: userProfile.configs.maxOrder || 3,
-    maxShortOrder: userProfile.configs.maxShortOrder || 1,
-    minTarget:  userProfile.configs.minTarget || 10,
-    quantity : userProfile.configs.quantity || 100,
-    isBullish: !!userProfile.configs.isBullish,
-    isBearish: !!userProfile.configs.isBearish,
-    marketOrder: !!userProfile.configs.marketOrder
+    maxOrder: userProfile.configs?.maxOrder || 3,
+    maxShortOrder: userProfile.configs?.maxShortOrder || 1,
+    minTarget:  userProfile.configs?.minTarget || 10,
+    quantity : userProfile.configs?.quantity || 100,
+    isBullish: !!userProfile.configs?.isBullish,
+    isBearish: !!userProfile.configs?.isBearish,
+    marketOrder: !!userProfile.configs?.marketOrder
   }
   const [config,setConfig] = React.useState(defaultConfig);
   
