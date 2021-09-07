@@ -13,11 +13,12 @@ export default function holdings({
   positions,
   quotes}) {
 
-  console.log(positions);
+  
 
   let [tickerQuotes,setTickerQuotes] = React.useState();
 
   React.useEffect(()=>{
+    console.log("positions",positions);
     let quotesInstruments = Object.values(quotes).map(item=>item.instrument_token);
     
     getTicks(quotesInstruments,(ticks)=>{
@@ -51,20 +52,48 @@ export default function holdings({
         stockPriceChg = stockQuote.change;
         let optionTicker = tickerQuotes[item.instrument_token]
         currPrice = optionTicker.depth.buy[0].price || optionTicker.last_price;
-        offerPrice = optionTicker.depth.sell[0].price;
+        offerPrice = optionTicker.depth.sell[0].price  || optionTicker.last_price;
+
+        
       }
     
+      
+      
       let buyPrice = item.buy_price
       let breakeven = strike+buyPrice;
       let minTimeValue = -stockPrice + (strike + currPrice);
       let maxTimeValue = (-stockPrice + (strike + offerPrice))/stockPrice;
-      let breakevenDiff = stockPrice - breakeven;
-      let breakevenChg = breakevenDiff*100/stockPrice;
+      
       let quantity = item.quantity;
       let buyValue = item.buy_value;
       let currValue = Number((currPrice * quantity).toFixed(2));
       let pnl = (currPrice - buyPrice)*quantity;
+
+      
+      
+      
+      if(item.quantity < 0){
+        let sellPrice = item.sell_price;
+        pnl = -1*(sellPrice - offerPrice)*(quantity);
+        buyPrice = sellPrice;
+        breakeven =  strike - sellPrice
+      }
+
+      let breakevenDiff = stockPrice - breakeven;
+      let breakevenChg = breakevenDiff*100/stockPrice;
       let expiryPnL = (breakevenDiff) * quantity;
+
+      if(item.quantity < 0){
+        expiryPnL = -1* expiryPnL
+      }
+
+      if(item.quantity > 0 && item.tradingsymbol.endsWith('PE')){
+        breakeven = "0"
+        breakevenChg="0"
+        expiryPnL = ""
+      }
+
+      
 
       totalProfit += pnl;
       totalInvestment += buyValue;
@@ -161,7 +190,7 @@ export default function holdings({
         <span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
     },
     {
-      name: 'Buy Price',wrap:true,
+      name: 'Buy/Sell Price',wrap:true,
       selector: 'buyPrice',
       sortable: true
     },
@@ -269,7 +298,7 @@ export async function getServerSideProps(ctx) {
 
   try{
     positions = await kc.getPositions();
-    positions = positions.net.filter(item=>item.exchange=='NFO' && item.quantity > 0);
+    positions = positions.net.filter(item=>item.exchange=='NFO' && item.quantity != 0);
     
     let stockCodes = Array.from(new Set(positions
       .map(item=>{
