@@ -361,7 +361,7 @@ export default function BuySell({
     cell:(row)=><div>{state.closePrice}
       <br/>
       <div className="is-size-7">
-        {(state.closePrice - row.average_price)* row.quantity} ({ (state.closePrice - row.average_price)*100/row.average_price }%)
+        {((state.closePrice - row.average_price)* row.quantity).toFixed(2)} ({((state.closePrice - row.average_price)*100/row.average_price ).toFixed(2)}%)
       </div>
     </div>
   },{
