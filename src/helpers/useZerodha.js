@@ -44,15 +44,21 @@ export default function useZerodha(){
     let url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}`;
     console.log('Creating order...',url);
     if(dev){
-      if(transactionType == 'BUY'){
-        url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=1&transactionType=${transactionType}`;
-      }else{
-        url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=1&transactionType=BUY`;
-      }
+      
+      // if(transactionType == 'BUY'){
+      //   url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=1&transactionType=${transactionType}`;
+      // }else{
+      //   url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=1&transactionType=BUY`;
+      // }
+    
+      return await Promise.resolve(1234);
+
+    }else{
+      let res = await fetch(url).then(res=>res.json());
+      return res.data.order_id;
     }
 
-    let res = await fetch(url).then(res=>res.json());
-    return res.data.order_id;
+    
     // return 123;
   }
 

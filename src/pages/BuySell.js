@@ -45,7 +45,8 @@ export default function BuySell({
     profitArr:[],
     tradeCount:0,
     orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
-    shortOrders: userProfile.shortOrders?.filter(item=>item.tradingsymbol == tradingsymbol)
+    shortOrders: userProfile.shortOrders?.filter(item=>item.tradingsymbol == tradingsymbol),
+    closedOrders:[]
   });
 
   React.useEffect(()=>{
@@ -104,6 +105,7 @@ export default function BuySell({
     let profitArr = [...state.profitArr];
     let orders = [...state.orders];
     let updatedShortOrders = [...state.shortOrders];
+    let closedOrders = [...state.closedOrders];
 
     let newTrend = item.signal=='GREEN'?"UP":"DOWN";
     
@@ -140,6 +142,9 @@ export default function BuySell({
               let currOrder = await createOrder(item);
 
               let currProfit = currOrder.average_price - order.average_price;
+              order.buyPrice = order.average_price;
+              order.sellPrice = currOrder.average_price;
+              
               order.profit = currProfit;
               profit += currProfit;
 
@@ -151,6 +156,7 @@ export default function BuySell({
           }
           //Remove executed orders
           orders = orders.filter(item=>!executedOrders.includes(item.order_id));
+          closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
         }
         if(config.isBearish && updatedShortOrders.length < config.maxShortOrder){
           log('Brearish flag is enabled, Triggering short order...');
@@ -243,6 +249,7 @@ export default function BuySell({
       tradeCount,
       trendReverse,
       profit,
+      closedOrders,
       orders,
       shortOrders:updatedShortOrders,
       profitArr,
@@ -339,6 +346,23 @@ export default function BuySell({
     await save({newConfig:config});
   }
 
+  let closedOrderColumns = [{
+    name:'tradingsymbol',
+    selector:'tradingsymbol'
+  },{
+    name:'order_id',
+    selector:'order_id'
+  },{
+    name:'buyPrice',
+    selector:'buyPrice'
+  },{
+    name:'sellPrice',
+    selector:'sellPrice'
+  },{
+    name:'profit',
+    selector:'profit'
+  }]
+
   let orderColumns=[{
     name:'tradingsymbol',
     selector:'tradingsymbol'
@@ -400,7 +424,7 @@ export default function BuySell({
     <div >
       <Head>
         <title>
-          {"PnL:"+totalProfit+" | "+(config.shouldRun?'Running... ':'Stopped')}
+          {"PnL:"+totalProfit.toFixed(2)+" | "+(config.shouldRun?'Running... ':'Stopped')}
         </title>
       </Head>
       {/* <button onClick={save}>Save</button> */}
@@ -417,8 +441,13 @@ export default function BuySell({
           </div>
 
           <div className="column is-10">
-            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={orders}></Table>
-            <Table title={"Orders(SmartOptions)"} columns={orderColumns} data={state.shortOrders}></Table>
+            <Table title={"Open Orders"} columns={orderColumns} data={orders}></Table>
+            {state.shortOrders.length>0 &&
+            <Table title={"Open Short Orders"} columns={orderColumns} data={state.shortOrders}></Table>
+            }
+            {state.closedOrders.length>0 &&
+            <Table title={"Booked Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
+            }
           </div>
         </div>
       </div>
@@ -432,17 +461,7 @@ export default function BuySell({
 
       </div>
 
-      
-
-      {/* <div className="container mt-5">
-
-        <div className="columns">
-          <div className="column">
-            <Table title={"Orders(Zerodha)"} columns={columns} data={state.positions}></Table>
-          </div>
-        </div>
-      </div>  */}
-
+    
      
 
      
