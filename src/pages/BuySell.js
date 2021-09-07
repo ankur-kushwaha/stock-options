@@ -27,6 +27,7 @@ export default function BuySell({
   let [logs,setLogs] = React.useState([]);
 
   let defaultConfig = {
+    tradingsymbol,
     maxOrder: userProfile.configs.maxOrder || 3,
     maxShortOrder: userProfile.configs.maxShortOrder || 1,
     minTarget:  userProfile.configs.minTarget || 10,
@@ -57,23 +58,7 @@ export default function BuySell({
 
     async function fetchHistory(){
 
-      let regex = /NIFTY(.*)(\d{5})([C|P]E)/
-    
-      let map = {
-        "21909":"09SEP21",
-        "21916":"16SEP21",
-        "21923":"23SEP21",
-        "21930":"30SEP21"
-      }
-
-      let out = tradingsymbol.match(regex);
-      let srcDate = out[1];
-      let strike = out[2]
-      let type = out[3];
-
-
-      let targetTradingsymbol = `NIFTY${map[srcDate]}${strike}${type}`
-      let res = await getHistory(targetTradingsymbol);
+      let res = await getHistory(tradingsymbol);
 
       if(config.shouldRun){
         setHistory(res.history);

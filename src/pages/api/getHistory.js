@@ -1,6 +1,4 @@
-import { getKiteClient } from "../../helpers/kiteConnect";
-let { SmartAPI, WebSocket } = require("smartapi-javascript");
-const AngelInstrument = require('../../models/angelInstruments');
+let { SmartAPI } = require("smartapi-javascript");
 const InstrumentHistory = require('../../models/InstrumentHistory');
 import date from 'date-and-time';
 
@@ -22,7 +20,7 @@ function sleep(ms) {
 export default async function handler(req, res) {
   await smart_api.generateSession("A631449", "Kushwaha1@")
   let instruments = req.query.instruments.split(",").filter(item=>item.indexOf('BE')==-1)
-  
+
   let data = await InstrumentHistory.find({name:{$in:instruments}}).exec()
   res.status(200).json({data})
     

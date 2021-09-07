@@ -1,7 +1,5 @@
 import React from 'react'
 
-import { useRouter } from 'next/router'
-
 function ConfigItem({
   title,onChange,
   type="text",
@@ -21,11 +19,9 @@ function ConfigItem({
 
 export default function BuySellConfig({config,onUpdate,cleanOrders}) {
   
-
-  const {query} = useRouter();
   const [state,setState] = React.useState({
     ...config,
-    tradingsymbol:query.tradingsymbol
+    
   }||{});
 
   const handleChange = (key,type)=>(e)=>{

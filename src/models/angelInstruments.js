@@ -3,7 +3,7 @@ var Schema = mongoose.Schema;
 
 var angelInstrument = new Schema({
   "token": {
-    "type": "Number"
+    "type": "String"
   },
   "symbol": {
     "type": "String"

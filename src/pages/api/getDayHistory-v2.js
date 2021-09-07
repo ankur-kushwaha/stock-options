@@ -1,7 +1,6 @@
-import { getKiteClient } from "../../helpers/kiteConnect";
-let { SmartAPI, WebSocket } = require("smartapi-javascript");
+let { SmartAPI } = require("smartapi-javascript");
 const AngelInstrument = require('../../models/angelInstruments');
-const InstrumentHistory = require('../../models/InstrumentHistory');
+const ZerodhaInstrument = require('../../models/instrument');
 import date from 'date-and-time';
 
 
@@ -28,16 +27,12 @@ export default async function handler(req, res) {
   let toDate = new Date()
   const fromDate = new Date();
 
-  let query;
-  if(exchange == 'NFO'){
-    query = { symbol : instruments[0],exch_seg:'NFO'}
-  }else{
-    query = { symbol : instruments[0],exch_seg:'NSE'}
-  }
-  console.log(query)
-  let doc = await AngelInstrument.findOne(query);
+  let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':instruments[0]});
+  let token = zerodhaInstrument.toObject().exchange_token;
 
-  let params = {
+  let doc = (await AngelInstrument.findOne({'token':token})).toObject();
+
+  let params =  {
     "exchange": exchange||'NSE',
     "symboltoken": doc.token,
     "interval": "ONE_MINUTE",
@@ -47,7 +42,6 @@ export default async function handler(req, res) {
   let response = await smart_api.getCandleData(params)
   let data = response.data;
   
-
   let first = data[0];
   let prev = {
     timestamp:first[0],
