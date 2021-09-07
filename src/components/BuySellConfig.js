@@ -68,51 +68,67 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
   return (
     <div>
 
-      <ConfigItem title="Tradingsymbol" value={state.tradingsymbol} onChange={handleChange('tradingsymbol','text')}/>
-      <button className="button is-small is-success" onClick={handleSymbolChange}>Reload</button>
+      <article className={"message is-small "+(config.shouldRun?'is-success':"is-info")}>
+        <div className="message-header">
+          <p>Trading Stock</p>
+        </div>
+        <div className="message-body">
+          <ConfigItem title="Tradingsymbol" value={state.tradingsymbol} onChange={handleChange('tradingsymbol','text')}/>
+          <button className="button is-small is-pulled-right is-success" onClick={handleSymbolChange}>Update Stock</button>
+          <div className="is-clearfix"></div>
+        </div>
+      </article>
 
-      <ConfigItem type="number" title="Max Order" value={state.maxOrder} onChange={handleChange('maxOrder','number')}/>
-      <ConfigItem type="number" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
-      <ConfigItem type="number" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
-      <div>
-        <label className="checkbox">
-          <input checked={state.marketOrder} type="checkbox" onChange={handleChange('marketOrder')}/>
-          &nbsp;
-          <span className="is-size-7">
-            Trigger at Market
-          </span>
-        </label>
-      </div>
-      <div>
-        <label className="checkbox">
-          <input checked={state.isBullish} type="checkbox" onChange={handleChange('isBullish')}/>
-          &nbsp;
-          <span className="is-size-7">
-            Bullish Market
-          </span>
-        </label>
-      </div>
-      <div>
-        <label className="checkbox">
-          <input checked={state.isBearish} type="checkbox" onChange={handleChange('isBearish')}/>
-          &nbsp;
-          <span className="is-size-7">
-            Bearish Market
-          </span>
-        </label>
-      </div>
-      <br />
+      <article className={"message is-small "+(config.shouldRun?'is-success':"is-info")}>
+        <div className="message-header">
+          <p>Trade Settings</p>
+        </div>
+        <div className="message-body">
+          
       
-      <button className="button is-small" onClick={handleClickUpdate}>Update</button>
+          <ConfigItem type="number" title="Max Order" value={state.maxOrder} onChange={handleChange('maxOrder','number')}/>
+          <ConfigItem type="number" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
+          <ConfigItem type="number" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
+          <div>
+            <label className="checkbox">
+              <input checked={state.marketOrder} type="checkbox" onChange={handleChange('marketOrder')}/>
+          &nbsp;
+              <span className="is-size-7">
+            Trigger at Market
+              </span>
+            </label>
+          </div>
+          <div>
+            <label className="checkbox">
+              <input checked={state.isBullish} type="checkbox" onChange={handleChange('isBullish')}/>
+          &nbsp;
+              <span className="is-size-7">
+            Bullish Market
+              </span>
+            </label>
+          </div>
+          <div>
+            <label className="checkbox">
+              <input checked={state.isBearish} type="checkbox" onChange={handleChange('isBearish')}/>
+          &nbsp;
+              <span className="is-size-7">
+            Bearish Market
+              </span>
+            </label>
+          </div>
+          <br />
+      
+          <button className="is-fullwidth mb-2 button is-small" onClick={handleClickUpdate}>Update Settings</button>
 
-      <br/><br/>
-      {!state.shouldRun?
-        <button className="button is-small" onClick={handleButtonClick(true)}>Start</button>:
-        <button className="button is-small" onClick={handleButtonClick(false)}>Stop</button>
-      }
+          {!state.shouldRun?
+            <button className="is-fullwidth button is-small" onClick={handleButtonClick(true)}>Start Trading</button>:
+            <button className="is-fullwidth button is-small" onClick={handleButtonClick(false)}>Stop Trading</button>
+          }
 
-      <br /><br />
-      <button className="button is-small" onClick={handleCleanOrders('ALL')}>Clean All Orders</button>
+      
+          <button className="is-fullwidth mt-2 button is-small" onClick={handleCleanOrders('ALL')}>Clean All Orders</button>
+        </div>
+      </article>
     </div>
   )
 }

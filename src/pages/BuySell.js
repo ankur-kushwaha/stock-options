@@ -47,7 +47,7 @@ export default function BuySell({
     tradeCount:0,
     orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
     shortOrders: userProfile.shortOrders?.filter(item=>item.tradingsymbol == tradingsymbol),
-    closedOrders:[]
+    closedOrders: userProfile.closedOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
   });
 
   React.useEffect(()=>{
@@ -280,16 +280,18 @@ export default function BuySell({
 
   const save = React.useCallback(async function save({
     newConfig,
-    newOrders,
-    newShortOrders
+    orders,
+    shortOrders,
+    closedOrders
   }={}){
     let data = {
       userId:userProfile.user_id,
       tradingsymbol,
       session:{
         configs:newConfig||config,
-        orders:newOrders||state.orders,
-        shortOrders:newShortOrders||state.shortOrders,
+        orders:orders||state.orders,
+        shortOrders:shortOrders||state.shortOrders,
+        closedOrders:closedOrders||state.closedOrders
       }
     };
     log('Saving user',data);
@@ -350,19 +352,71 @@ export default function BuySell({
       <div>
         <Price>{row.pnl}</Price><br/> (<Price>{row.pnlPct}</Price>)
       </div>
+  },{
+    name:"Buy/Sell",
+    cell:row=><button className="button is-small" onClick={closePosition(row)}>Close Now</button>
   }];
 
-  async function cleanOrders(type){
-    
-    await save({
-      newOrders:[],
-      newShortOrders:[]
-    })
+  const closePosition = (row)=>async ()=>{
+    let orders = [...state.orders];
+    let closedOrders = [...state.closedOrders];
+    orders = orders.filter(item=>item.order_id != row.order_id);
 
     setState({
       ...state,
       orders
     })
+
+    let currOrder = await createOrder({
+      actual:{
+        close:state.closePrice
+      }
+    },{
+      transactionType:row.quantity>0?'SELL':'BUY',
+      quantity:row.quantity
+    })
+    if(currOrder){
+      let sellPrice = currOrder.average_price;
+      row.sellPrice = sellPrice;
+      row.buyPrice = row.average_price;
+      let profit = sellPrice - row.average_price;
+      row.profit = profit;
+  
+      closedOrders.push(row);
+
+      await save({
+        orders,
+        closedOrders
+      });
+
+      setState({
+        ...state,
+        orders,
+        closedOrders
+      })
+  
+      
+    }else{
+      log('Sell order failed ',row);
+    }
+    
+  }
+
+  async function cleanOrders(){
+    
+    setState({
+      ...state,
+      orders:[],
+      closedOrders:[]
+    })
+
+    await save({
+      orders:[],
+      closedOrders:[],
+      shortOrders:[]
+    })
+
+    
   }
 
   function log(...args){
@@ -387,17 +441,18 @@ export default function BuySell({
       {/* <button onClick={save}>Save</button> */}
       <Header userProfile={userProfile} tab="positions"></Header>
 
-      <div className="container mt-4">
-        <div className="columns">
-          <div className="column is-2">
-            <article className={"message "+(config.shouldRun?'is-success':"is-danger")}>
-              <div className="message-body">
-                <BuySellConfig config={config} cleanOrders={cleanOrders} onUpdate={handleUpdate}></BuySellConfig>
-              </div>
-            </article>
+      <div className="container mt-5">
+
+        <div className="columns is-gapless">
+
+          <div className="column is-3">
+            
+            
+            <BuySellConfig config={config} cleanOrders={cleanOrders} onUpdate={handleUpdate}></BuySellConfig>
+             
           </div>
 
-          <div className="column is-10">
+          <div className="column">
             <Table title={"Open Orders"} columns={orderColumns} data={orders}></Table>
             {state.shortOrders.length>0 &&
             <Table title={"Open Short Orders"} columns={orderColumns} data={state.shortOrders}></Table>
@@ -409,15 +464,7 @@ export default function BuySell({
         </div>
       </div>
 
-      <div className="container mt-6">
-        <article className={"message is-info"}>
-          <div className="message-body">
-            {logs.map((log,i)=><div className=" control is-size-7" key={i}>{JSON.stringify(log,null,2)}<br/><br/></div>)}
-          </div>
-        </article>       
-
-      </div>
-      
+    
     </div>
   )
 }
@@ -434,17 +481,10 @@ export async function getServerSideProps(ctx) {
   let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];
   // console.log(123,session)
 
-  userProfile.configs = session?.data.configs||dbUser.configs;
-  if(session?.data.orders.length){
-    userProfile.orders = session?.data.orders
-  }else{
-    userProfile.orders = dbUser.orders;
-  }
-  if(session?.data.shortOrders.length){
-    userProfile.shortOrders = session?.data.shortOrders
-  }else{
-    userProfile.shortOrders = dbUser.shortOrders;
-  }
+  userProfile.configs = session?.data.configs||dbUser.configs||{};
+  userProfile.orders = session?.data.orders||[]
+  userProfile.shortOrders = session?.data.shortOrders||[];
+  userProfile.closedOrders = session?.data.closedOrders||[];
   
 
   let positions = await kc.getPositions();
