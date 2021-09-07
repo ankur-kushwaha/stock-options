@@ -41,7 +41,7 @@ export default function BuySell({
   }
 
   if(userProfile.shortOrders){
-    shortOrders = userProfile.orders.filter(item=>item.tradingsymbol == tradingsymbol)
+    shortOrders = userProfile.shortOrders.filter(item=>item.tradingsymbol == tradingsymbol)
   }
   
   let [state,setState] = React.useState({
