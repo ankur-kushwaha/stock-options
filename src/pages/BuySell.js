@@ -470,12 +470,20 @@ export default function BuySell({
 }
 
 export async function getServerSideProps(ctx) {
-  let {req} = ctx;
+  let {req,res} = ctx;
   let {tradingsymbol} = req.query;
 
   let kc,userProfile;
-  kc = await getKiteClient(req.cookies);
-  userProfile = await kc.getProfile();
+  try{
+    kc = await getKiteClient(req.cookies);
+    userProfile = await kc.getProfile();
+  }catch(e){
+    res.writeHead(301, { Location: `/`})
+    res.end()
+  }
+  
+  
+
   let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
 
   let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];

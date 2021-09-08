@@ -7,6 +7,10 @@ export default function Header({ userProfile={},tab}) {
   let [state,setState] = React.useState({})
   tab = router.pathname.substring(1)
 
+  if(!user_name){
+    router.location = '/'
+  }
+
   function toggleMenu(){
     setState({
       isMenuOpen:!state.isMenuOpen
