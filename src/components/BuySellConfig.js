@@ -78,8 +78,8 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
             <div className="columns">
               <div className="column">
                 {!state.shouldRun?
-                  <button className="is-fullwidth button is-small" onClick={handleButtonClick(true)}>Start Trading</button>:
-                  <button className="is-fullwidth button is-small" onClick={handleButtonClick(false)}>Stop Trading</button>
+                  <button className="is-success is-fullwidth button is-small" onClick={handleButtonClick(true)}>Start Trading</button>:
+                  <button className="is-success is-fullwidth button is-small" onClick={handleButtonClick(false)}>Stop Trading</button>
                 }
               </div>
 
@@ -94,7 +94,7 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
 
           <div className="box">
             <ConfigItem title="Tradingsymbol" value={state.tradingsymbol} onChange={handleChange('tradingsymbol','text')}/>
-            <button className="button is-small is-pulled-right is-success" onClick={handleSymbolChange}>Update Stock</button>
+            <button className="button is-small is-pulled-right" onClick={handleSymbolChange}>Update Stock</button>
             <div className="is-clearfix"></div>
           </div>
 

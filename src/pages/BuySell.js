@@ -124,9 +124,11 @@ export default function BuySell({
               hasOrdersUpdated++;
               executedOrders.push(order.order_id);
             
-              let currOrder = await createOrder(item);
+              let currOrder = await createOrder(item,{
+                quantity:order.quantity
+              });
 
-              let currProfit = currOrder.average_price - order.average_price;
+              let currProfit = (currOrder.average_price - order.average_price) * order.quantity;
               order.buyPrice = order.average_price;
               order.sellPrice = currOrder.average_price;
               
@@ -313,6 +315,9 @@ export default function BuySell({
     selector:'order_id',
     grow:1
   },{
+    name:'quantity',
+    selector:'quantity'
+  },{
     name:'buyPrice',
     selector:'buyPrice'
   },{
@@ -379,7 +384,7 @@ export default function BuySell({
       let sellPrice = currOrder.average_price;
       row.sellPrice = sellPrice;
       row.buyPrice = row.average_price;
-      let profit = sellPrice - row.average_price;
+      let profit = (sellPrice - row.average_price)*row.quantity;
       row.profit = profit;
   
       closedOrders.push(row);
@@ -425,9 +430,9 @@ export default function BuySell({
 
   let totalProfit = 0;
   let orders = state.orders.map(row=>{
-    row.pnl = (state.closePrice - row.average_price)* row.quantity;
+    row.pnl = (state.closePrice - row.average_price) * row.quantity;
     totalProfit += row.pnl;
-    row.pnlPct = (state.closePrice - row.average_price)*100/row.average_price 
+    row.pnlPct = (state.closePrice - row.average_price) * 100/row.average_price 
     return row;
   });
 
