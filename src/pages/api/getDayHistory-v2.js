@@ -37,8 +37,8 @@ export default async function handler(req, res) {
     "exchange": exchange||'NSE',
     "symboltoken": doc.token,
     "interval": "ONE_MINUTE",
-    "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:15'),  //"2021-02-10 09:00",
-    "todate":  date.format(toDate, 'YYYY-MM-DD 15:15')//"2021-03-10 09:20"
+    "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:10'),  //"2021-02-10 09:00",
+    "todate":  date.format(toDate, 'YYYY-MM-DD 15:30')//"2021-03-10 09:20"
   }
   let response = await smart_api.getCandleData(params)
   let data = response.data;

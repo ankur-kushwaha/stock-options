@@ -325,7 +325,8 @@ export default function BuySell({
     selector:'sellPrice'
   },{
     name:'profit',
-    selector:'profit'
+    selector:'profit',
+    cell:row=><Price>{row.profit}</Price>
   }]
 
   let orderColumns=[{
@@ -364,12 +365,20 @@ export default function BuySell({
 
   const closePosition = (row)=>async ()=>{
     let orders = [...state.orders];
+    let shortOrders = [...state.shortOrders];
+
     let closedOrders = [...state.closedOrders];
-    orders = orders.filter(item=>item.order_id != row.order_id);
+    if(row.transaction_type == 'BUY'){
+      orders = orders.filter(item=>item.order_id != row.order_id);
+    }else{
+      shortOrders =  shortOrders.filter(item=>item.order_id != row.order_id);
+    }
+    
 
     setState({
       ...state,
-      orders
+      orders,
+      shortOrders
     })
 
     let currOrder = await createOrder({
@@ -377,15 +386,25 @@ export default function BuySell({
         close:state.closePrice
       }
     },{
-      transactionType:row.quantity>0?'SELL':'BUY',
+      transactionType:row.transaction_type=='BUY'?'SELL':'BUY',
       quantity:row.quantity
     })
+
     if(currOrder){
-      let sellPrice = currOrder.average_price;
+      let sellPrice,buyPrice;
+
+      if(row.transaction_type=='BUY'){
+        buyPrice = row.average_price;
+        sellPrice = currOrder.average_price
+      }else{
+        sellPrice = row.average_price;
+        buyPrice = currOrder.average_price
+      }
+
       row.sellPrice = sellPrice;
       row.buyPrice = row.average_price;
-      let profit = (sellPrice - row.average_price)*row.quantity;
-      row.profit = profit;
+
+      row.profit = (sellPrice - buyPrice) * row.quantity;
   
       closedOrders.push(row);
 
@@ -399,7 +418,6 @@ export default function BuySell({
         orders,
         closedOrders
       })
-  
       
     }else{
       log('Sell order failed ',row);
@@ -463,7 +481,7 @@ export default function BuySell({
             <Table title={"Open Short Orders"} columns={orderColumns} data={state.shortOrders}></Table>
             }
             {state.closedOrders.length>0 &&
-            <Table title={"Booked Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
+            <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
             }
           </div>
         </div>
@@ -475,6 +493,7 @@ export default function BuySell({
 }
 
 export async function getServerSideProps(ctx) {
+  
   let {req,res} = ctx;
   let {tradingsymbol} = req.query;
 
@@ -483,9 +502,12 @@ export async function getServerSideProps(ctx) {
     kc = await getKiteClient(req.cookies);
     userProfile = await kc.getProfile();
   }catch(e){
-    res.writeHead(301, { Location: `/`})
+    console.log(e)
+    res.writeHead(307, { Location: `/`})
     res.end()
   }
+
+  console.log(userProfile)
   
   
 
