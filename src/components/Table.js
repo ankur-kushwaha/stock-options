@@ -2,6 +2,9 @@ import React from 'react'
 import DataTable from 'react-data-table-component';
 import Cell from './Cell';
 
+const ExpandedComponent = ({ data }) => <pre>
+  {JSON.stringify(data, null, 2)}</pre>;
+
 
 export default function Table({ pagination=true,title,data,columns }) { 
   const handleClick = (item, type) => () => {
