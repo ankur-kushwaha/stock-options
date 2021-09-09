@@ -60,7 +60,7 @@ export default function Orders({ userProfile }) {
       isRunning:item.data.configs.shouldRun
     }
   }).filter(item=>{
-    return item.orderCount||item.shortOrdersCount||item.closedOrdersCount
+    return item.orderCount||item.shortOrdersCount||item.closedOrdersCount||item.isRunning
   })
 
     return(
