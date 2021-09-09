@@ -14,7 +14,7 @@ export default function Orders({ userProfile }) {
     name: 'Tradingsymbol',
     selector: 'tradingsymbol',
     wrap: true,
-    cell:row=><a href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} target="_blank">{row.tradingsymbol}</a>
+    cell:row=><a rel="noreferrer" href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} target="_blank">{row.tradingsymbol}</a>
   }, {
     name: 'Open Orders',
     selector: 'orderCount',
