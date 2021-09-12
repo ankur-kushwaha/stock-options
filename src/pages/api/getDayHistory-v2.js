@@ -18,16 +18,15 @@ function sleep(ms) {
   });
 }   
 
-export default async function handler(req, res) {
+async function getDayHistory(tradingsymbol,options={}){
+  let {daysAgo} = options;
   await smart_api.generateSession("A631449", "Kushwaha1@")
-  let {instruments}  = req.query
+  let today  = new Date();
 
-  instruments = instruments.split(",").filter(item=>item.indexOf('BE')==-1)
-  
-  let toDate = new Date()
-  const fromDate = new Date();
+  let toDate = date.addDays(today,-daysAgo)
+  const fromDate = date.addDays(today,-daysAgo)
 
-  let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':instruments[0]});
+  let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol});
   let token = zerodhaInstrument.toObject().exchange_token;
   let exchange = zerodhaInstrument.toObject().exchange;
 
@@ -40,6 +39,7 @@ export default async function handler(req, res) {
     "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:10'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:30')//"2021-03-10 09:20"
   }
+  console.log(params)
   let response = await smart_api.getCandleData(params)
   let data = response.data;
   
@@ -69,6 +69,20 @@ export default async function handler(req, res) {
     prev = history[history.length-1];
   }
 
-    
+  return history;
+}
+
+export default async function handler(req, res) {
+  
+  let {instruments}  = req.query
+
+  instruments = instruments.split(",").filter(item=>item.indexOf('BE')==-1)
+  
+  let history  =await getDayHistory(instruments[0])
   res.status(200).json({history})
+}
+
+
+export {
+  getDayHistory
 }

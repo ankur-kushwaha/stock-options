@@ -17,7 +17,7 @@ function ConfigItem({
   </div></>)
 }
 
-export default function BuySellConfig({config,onUpdate,cleanOrders}) {
+export default function BuySellConfig({config,onUpdate}) {
   
   const [state,setState] = React.useState({
     ...config,
@@ -54,11 +54,6 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
       shouldRun:type
     })
   }    
-  
-  const handleCleanOrders = (type)=>()=>{
-    cleanOrders && cleanOrders(type);
-  }
-  
 
   const handleSymbolChange = ()=>{
     console.log(state.tradingsymbol);
@@ -78,15 +73,11 @@ export default function BuySellConfig({config,onUpdate,cleanOrders}) {
             <div className="columns">
               <div className="column">
                 {!state.shouldRun?
-                  <button className="is-success is-fullwidth button is-small" onClick={handleButtonClick(true)}>Start Trading</button>:
-                  <button className="is-success is-fullwidth button is-small" onClick={handleButtonClick(false)}>Stop Trading</button>
+                  <button className="is-success is-fullwidth button " onClick={handleButtonClick(true)}>Start Trading</button>:
+                  <button className="is-danger is-fullwidth button" onClick={handleButtonClick(false)}>Stop Trading</button>
                 }
               </div>
 
-
-              <div className="column">
-                <button className="is-fullwidth button is-small" onClick={handleCleanOrders('ALL')}>Clean All Orders</button>
-              </div>
             </div>
 
           </div>

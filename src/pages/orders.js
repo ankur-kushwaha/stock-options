@@ -14,7 +14,7 @@ export default function Orders({ userProfile }) {
     name: 'Tradingsymbol',
     selector: 'tradingsymbol',
     wrap: true,
-    cell:row=><a rel="noreferrer" href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} target="_blank">{row.tradingsymbol}</a>
+    cell:row=><a rel="noreferrer" href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} >{row.tradingsymbol}</a>
   }, {
     name: 'Open Orders',
     selector: 'orderCount',
@@ -46,39 +46,33 @@ export default function Orders({ userProfile }) {
 
 
   const orders = userProfile.sessions
-  .filter(item=>item.tradingsymbol)
-  .map(item=>{
+    .filter(item=>item.tradingsymbol)
+    .map(item=>{
 
-    let closedOrderProfit = item.data.closedOrders?.map(order=>order.pnl).reduce((a,b)=>a+b,0)||0;
+      let closedOrderProfit = item.data.closedOrders?.map(order=>order.pnl).reduce((a,b)=>a+b,0)||0;
 
-    return{
-      tradingsymbol:item.tradingsymbol,
-      orderCount:item.data.orders?.length||0,
-      shortOrdersCount:item.data.shortOrders?.length||0,
-      closedOrdersCount:item.data.closedOrders?.length||0,
-      closedOrderProfit,
-      isRunning:item.data.configs.shouldRun
-    }
-  }).filter(item=>{
-    return item.orderCount||item.shortOrdersCount||item.closedOrdersCount||item.isRunning
-  })
+      return{
+        tradingsymbol:item.tradingsymbol,
+        orderCount:item.data.orders?.length||0,
+        shortOrdersCount:item.data.shortOrders?.length||0,
+        closedOrdersCount:item.data.closedOrders?.length||0,
+        closedOrderProfit,
+        isRunning:item.data.configs.shouldRun
+      }
+    }).filter(item=>{
+      return item.orderCount||item.shortOrdersCount||item.closedOrdersCount||item.isRunning
+    })
 
-    return(
-      <div>
+  return(
+    <div> 
         
-        <Header/>
-        <div className="container mt-5">
-
+      <Header/>
+      <div className="container mt-5">
         <Table title={"Orders Summary"} columns={orderColumns} data={orders}></Table>
-
-        {/* <Table title={"Open Short Orders"} columns={orderColumns} data={state.shortOrders}></Table> */}
-
-
-        {/* <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table> */}
-</div>
-
       </div>
-    )
+
+    </div>
+  )
 }
 
 export async function getServerSideProps(ctx) {
