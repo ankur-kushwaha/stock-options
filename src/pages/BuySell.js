@@ -56,7 +56,7 @@ export default function BuySell({
   React.useEffect(()=>{
     log(userProfile);
 
-    fetch('http://localhost:3000/api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
+    fetch('api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
       let quote = res.quotes['NFO:'+tradingsymbol];
       setState({
         ...state,
