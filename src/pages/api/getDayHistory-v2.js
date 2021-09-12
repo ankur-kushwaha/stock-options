@@ -19,7 +19,7 @@ function sleep(ms) {
 }   
 
 async function getDayHistory(tradingsymbol,options={}){
-  let {daysAgo} = options;
+  let {daysAgo=0} = options;
   await smart_api.generateSession("A631449", "Kushwaha1@")
   let today  = new Date();
 
@@ -39,9 +39,11 @@ async function getDayHistory(tradingsymbol,options={}){
     "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:10'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:30')//"2021-03-10 09:20"
   }
-  console.log(params)
   let response = await smart_api.getCandleData(params)
   let data = response.data;
+  if(data == null){
+    return [];
+  }
   
   let first = data[0];
   let prev = {
