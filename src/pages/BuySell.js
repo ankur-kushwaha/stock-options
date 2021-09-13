@@ -144,6 +144,39 @@ export default function BuySell({
 
   }
 
+  async function triggerShortOrder(item){
+    let currOrder = await createOrder(item,{
+      transactionType:'SELL',
+      quantity: config.quantity
+    });
+    if(!currOrder){
+      log('Short Order failed');
+      return;
+    }
+    return currOrder;
+  }
+
+  async function triggerShortCover(order,item){
+    
+
+    let currOrder = await createOrder(item,{
+      transactionType:'BUY',
+      quantity:order.quantity
+    });
+    if(!currOrder){
+      console.error('Short cover order failed');
+      return;
+    }
+
+    order.buyPrice = currOrder.average_price||currOrder.price;
+    order.sellPrice = order.average_price;
+
+    order.profit = ( order.sellPrice - order.buyPrice ) * order.quantity;
+    order.closingOrder = currOrder;
+
+    return order;
+  }
+
   // Buy/Sell
   React.useEffect(async ()=>{
     
@@ -158,7 +191,7 @@ export default function BuySell({
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
     let orders = [...state.orders];
-    let updatedShortOrders = [...state.shortOrders];
+    let shortOrders = [...state.shortOrders];
     let closedOrders = [...state.closedOrders];
 
     let newTrend = item.signal=='GREEN'?"UP":"DOWN";
@@ -186,32 +219,29 @@ export default function BuySell({
         
           let executedOrders = [];
           for(let order of orders){
-            if((item.actual.close - order.average_price) > ((config.minTarget * order.average_price)/100)){
+            let buyPrice = order.average_price||order.price;
+            if((item.actual.close - buyPrice) > ((config.minTarget * buyPrice)/100)){
               let closedOrder = await triggerSellOrder(order,item);
               executedOrders.push(closedOrder.order_id);
               hasOrdersUpdated++;
-
             }else{
-              log(`Sell order blocked, Min Change: ${(config.minTarget * order.average_price)/100}, Current Chg: ${item.actual.close - order.average_price}, BuyPrice: ${order.average_price}, LTP: ${item.actual.close}, MinTarget: ${config.minTarget}`);
+              log(`Sell order blocked, Min Change: ${(config.minTarget * buyPrice)/100}, Current Chg: ${item.actual.close - buyPrice}, BuyPrice: ${buyPrice}, LTP: ${item.actual.close}, MinTarget: ${config.minTarget}`);
             }
           }
           //Remove executed orders
           closedOrders = closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
           orders = orders.filter(item=>!executedOrders.includes(item.order_id));
         }
-        if(config.isBearish && updatedShortOrders.length < config.maxShortOrder){
+        if(config.isBearish && shortOrders.length < config.maxShortOrder){
           log('Brearish flag is enabled, Triggering short order...');
-          let currOrder = await createOrder(item,{
-            transactionType:'SELL',
-            quantity: config.quantity
-          });
+          let currOrder = await triggerShortOrder(item);
           if(currOrder){
-            updatedShortOrders.push(currOrder);
+            shortOrders.push(currOrder);
             hasOrdersUpdated++;
           }
         }else{
           if(config.isBearish){
-            log('Short order capacity reached', updatedShortOrders);
+            log('Short order capacity reached', shortOrders);
           }
         }
 
@@ -238,30 +268,23 @@ export default function BuySell({
         }
         
         if(config.isBearish){
-          log('Bearish flag is enabled, checking open short orders', updatedShortOrders);
+          log('Bearish flag is enabled, checking open short orders', shortOrders);
           let executedOrders=[]
-          for(let order of updatedShortOrders){
-            if((order.average_price - item.close) > ((config.minTarget * item.close)/100)){
+          for(let order of shortOrders){
+            if((order.average_price - item.actual.close) > ((config.minTarget * item.actual.close)/100)){
               log('Triggerring short cover...',order);
-              let currOrder = await createOrder(item,{
-                transactionType:'BUY',
-                quantity:order.quantity
-              });
-              if(!currOrder){
-                console.error('Short cover order failed');
-              }
-              executedOrders.push(order.order_id);
+              let soldOrder = await triggerShortCover(order,item);
+              executedOrders.push(soldOrder.order_id);
               hasOrdersUpdated++;
             }else{
               log('Order not eligible for covering',order);
             }
           }
-          updatedShortOrders = updatedShortOrders.filter(item=>!executedOrders.includes(item.order_id))
+          closedOrders = closedOrders.concat(shortOrders.filter(item=>executedOrders.includes(item.order_id)))
+          shortOrders = shortOrders.filter(item=>!executedOrders.includes(item.order_id))
         }
-            
       } 
     }
-    
 
     setState({
       hasOrdersUpdated,
@@ -271,7 +294,7 @@ export default function BuySell({
       profit,
       closedOrders,
       orders,
-      shortOrders:updatedShortOrders,
+      shortOrders,
       profitArr,
       closePrice: item.actual.close
     })
@@ -371,7 +394,7 @@ export default function BuySell({
     selector:'price',
     cell:()=><>{state.closePrice}</>
   },{
-    name:'Buy Price',
+    name:'Buy/Sell Price',
     selector:'average_price',
     cell:row=><>{row.average_price||row.price}</>
   },{
@@ -386,17 +409,16 @@ export default function BuySell({
     cell:row=><button className="button is-small" onClick={closePosition(row)}>Close Now</button>
   }];
 
-  const closePosition = (row)=>async ()=>{
+  const closePosition = (order)=>async ()=>{
     let orders = [...state.orders];
     let shortOrders = [...state.shortOrders];
-
     let closedOrders = [...state.closedOrders];
-    if(row.transaction_type == 'BUY'){
-      orders = orders.filter(item=>item.order_id != row.order_id);
+
+    if(order.transaction_type == 'BUY'){
+      orders = orders.filter(item=>item.order_id != order.order_id);
     }else{
-      shortOrders =  shortOrders.filter(item=>item.order_id != row.order_id);
+      shortOrders =  shortOrders.filter(item=>item.order_id != order.order_id);
     }
-    
 
     setState({
       ...state,
@@ -409,43 +431,44 @@ export default function BuySell({
         close:state.closePrice
       }
     },{
-      transactionType:row.transaction_type=='BUY'?'SELL':'BUY',
-      quantity:row.quantity
+      transactionType:order.transaction_type=='BUY'?'SELL':'BUY',
+      quantity:order.quantity
     })
 
     if(currOrder){
       let sellPrice,buyPrice;
 
-      if(row.transaction_type=='BUY'){
-        buyPrice = row.average_price;
-        sellPrice = currOrder.average_price
+      if(order.transaction_type=='BUY'){
+        buyPrice = order.average_price;
+        sellPrice = currOrder.average_price || currOrder.price;
       }else{
-        sellPrice = row.average_price;
-        buyPrice = currOrder.average_price
+        sellPrice = order.average_price;
+        buyPrice = currOrder.average_price || currOrder.price
       }
 
-      row.sellPrice = sellPrice;
-      row.buyPrice = row.average_price;
-
-      row.profit = (sellPrice - buyPrice) * row.quantity;
+      order.sellPrice = sellPrice;
+      order.buyPrice = order.average_price;
+      order.profit = (sellPrice - buyPrice) * order.quantity;
+      order.profitPct = (sellPrice - buyPrice)/buyPrice*100;
   
-      closedOrders.push(row);
+      closedOrders.push(order);
 
       await save({
         orders,
+        shortOrders,
         closedOrders
       });
 
       setState({
         ...state,
         orders,
+        shortOrders,
         closedOrders
       })
       
     }else{
-      log('Sell order failed ',row);
+      log('Sell order failed ',order);
     }
-    
   }
 
   function log(...args){
@@ -463,6 +486,15 @@ export default function BuySell({
     order.profit = (state.closePrice - buyPrice) * order.quantity;
     totalProfit += order.profit;
     order.profitPct = (state.closePrice - buyPrice) * 100/buyPrice;
+    return order;
+  });
+
+  let shortOrders = state.shortOrders.map(order=>{
+    let sellPrice = (order.average_price||order.price)
+
+    order.profit = (sellPrice - state.closePrice ) * order.quantity;
+    totalProfit += order.profit;
+    order.profitPct = (sellPrice - state.closePrice ) * 100/state.closePrice;
     return order;
   });
 
@@ -489,7 +521,7 @@ export default function BuySell({
           <div className="column">
             <Table title={"Open Orders"} columns={orderColumns} data={orders}></Table>
             {state.shortOrders.length>0 &&
-            <Table title={"Open Short Orders"} columns={orderColumns} data={state.shortOrders}></Table>
+            <Table title={"Open Short Orders"} columns={orderColumns} data={shortOrders}></Table>
             }
             {state.closedOrders.length>0 &&
             <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
