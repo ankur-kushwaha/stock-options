@@ -482,6 +482,27 @@ export default function BuySell({
     console.log(args);
   }
 
+  async function triggerNow(){
+    let buyOrder = await triggerBuyOrder({
+      actual:{
+        close:state.closePrice
+      }
+    })
+
+    if(buyOrder){
+      let orders = [...state.orders];
+      orders.push(buyOrder);
+  
+      setState({
+        ...state,
+        orders,
+        hasOrdersUpdated:++state.hasOrdersUpdated
+      })
+    }
+
+    
+  }
+
   let totalProfit = 0;
 
   let orders = state.orders.map(order=>{
@@ -511,13 +532,14 @@ export default function BuySell({
       {/* <button onClick={save}>Save</button> */}
       <Header userProfile={userProfile} tab="BuySell"></Header>
 
+
       <div className="container mt-5">
 
         <div className="columns is-gapless">
 
           <div className="column is-3">
             
-            <BuySellConfig config={config} onUpdate={handleUpdate}></BuySellConfig>
+            <BuySellConfig config={config} triggerNow={triggerNow} onUpdate={handleUpdate}></BuySellConfig>
              
           </div>
 

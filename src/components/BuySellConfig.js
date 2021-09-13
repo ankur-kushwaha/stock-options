@@ -17,7 +17,7 @@ function ConfigItem({
   </div></>)
 }
 
-export default function BuySellConfig({config,onUpdate}) {
+export default function BuySellConfig({config,onUpdate,triggerNow}) {
   
   const [state,setState] = React.useState({
     ...config,
@@ -64,9 +64,7 @@ export default function BuySellConfig({config,onUpdate}) {
     <div>
 
       <article className={"message is-small "+(config.shouldRun?'is-success':"is-info")}>
-        {/* <div className="message-header">
-          <p>Trading Stock</p>
-        </div> */}
+        
         <div className="message-body">
           <div className="box">
 
@@ -76,6 +74,7 @@ export default function BuySellConfig({config,onUpdate}) {
                   <button className="is-success is-fullwidth button " onClick={handleButtonClick(true)}>Start Trading</button>:
                   <button className="is-danger is-fullwidth button" onClick={handleButtonClick(false)}>Stop Trading</button>
                 }
+                <button className="is-fullwidth is-small mt-3 button " onClick={triggerNow}>Trigger Now</button>
               </div>
 
             </div>
