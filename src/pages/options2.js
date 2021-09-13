@@ -84,9 +84,15 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
         highlight = true;
       }
 
+      let diffWeight = 10;
+      let breakevenWeight = 1.5;
+      let investmentFactor = 5;
+      let weight = (diffWeight/Math.abs(stockPrice-item.strike)) - (breakevenWeight/breakeven) + (investmentFactor/investment)
+
       // console.log(highlight);
       
       return {
+        weight,
         isLiquid,
         stockInstrumentToken,
         itemBidPrice,
@@ -121,7 +127,7 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
         }
         
       }) 
-      .sort((a,b)=>a.breakevenChg-b.breakevenChg);
+      .sort((a,b)=>-a.weight+b.weight);
   }
 
   if(options && options.length>0){
@@ -186,6 +192,11 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
     selector: 'breakevenChg',
     cell:row=><Price threshold={0.5} reverseColoring>{row.breakevenChg}</Price>,
     sortable: true,
+  },
+  {
+    name: 'weight',   
+    selector: 'weight',
+    sortable:true
   },
   ]
 

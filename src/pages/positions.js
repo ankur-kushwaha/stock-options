@@ -16,7 +16,7 @@ export default function holdings({
 
   
 
-  let [tickerQuotes,setTickerQuotes] = React.useState();
+  let [tickerQuotes,setTickerQuotes] = React.useState(quotes);
 
   React.useEffect(()=>{
     console.log("positions",positions);
@@ -47,8 +47,11 @@ export default function holdings({
       let currPrice,offerPrice,stockInstrumentToken,
         optionInstrumentToken = item.instrument_token;
       if(tickerQuotes){
-        stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token
+        stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token;
         let stockQuote = tickerQuotes[stockInstrumentToken];
+        if(!stockQuote){
+          stockQuote = tickerQuotes[`NSE:${stockCode}`];
+        }
         stockPrice = stockQuote.last_price;
         stockPriceChg = stockQuote.change;
         let optionTicker = tickerQuotes[item.instrument_token]

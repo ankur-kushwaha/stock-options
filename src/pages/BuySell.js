@@ -59,6 +59,10 @@ export default function BuySell({
 
     fetch('api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
       let quote = res.quotes['NFO:'+tradingsymbol];
+      if(!quote){
+        console.log('Quote not available for ', tradingsymbol)
+        return;
+      }
       setState({
         ...state,
         closePrice:quote.depth.buy[0].price||quote.last_price
@@ -378,6 +382,9 @@ export default function BuySell({
     name:'profit',
     selector:'profit',
     cell:row=><Price>{row.profit}</Price>
+  },{
+    name:"Delete",
+    cell:row=><button className="button is-small" onClick={deletePosition(row,'closedOrders')}>Delete</button>
   }]
 
   let orderColumns=[{
@@ -416,7 +423,23 @@ export default function BuySell({
   },{
     name:"Buy/Sell",
     cell:row=><button className="button is-small" onClick={closePosition(row)}>Close Now</button>
+  },{
+    name:"Delete",
+    cell:row=><button className="button is-small" onClick={deletePosition(row,'orders')}>Delete</button>
   }];
+
+  const deletePosition = (order,type='orders')=>async ()=>{
+    let orders = [...state[type]];
+    orders = orders.filter(item=>item.order_id != order.order_id);
+    await save({
+      [type]:orders
+    });
+    setState({
+      ...state,
+      [type]:orders,
+      hasOrdersUpdated:++state.hasOrdersUpdated
+    })
+  }
 
   const closePosition = (order)=>async ()=>{
     let orders = [...state.orders];
@@ -532,7 +555,7 @@ export default function BuySell({
     <div >
       <Head>
         <title>
-          {`${tradingsymbol} | ${totalProfit.toFixed(2)} | ${(config.shouldRun?'Running... ':'Stopped')}`}
+          {`${totalProfit.toFixed(2)} | ${tradingsymbol} | ${(config.shouldRun?'Running... ':'Stopped')}`}
         </title>
       </Head>
       {/* <button onClick={save}>Save</button> */}

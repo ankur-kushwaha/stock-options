@@ -49,7 +49,7 @@ export default function Orders({ userProfile }) {
     .filter(item=>item.tradingsymbol)
     .map(item=>{
 
-      let closedOrderProfit = item.data.closedOrders?.map(order=>order.pnl).reduce((a,b)=>a+b,0)||0;
+      let closedOrderProfit = item.data.closedOrders?.map(order=>order.profit).reduce((a,b)=>a+b,0)||0;
 
       return{
         tradingsymbol:item.tradingsymbol,
@@ -66,7 +66,7 @@ export default function Orders({ userProfile }) {
   return(
     <div> 
         
-      <Header/>
+      <Header userProfile={userProfile}/>
       <div className="container mt-5">
         <Table title={"Orders Summary"} columns={orderColumns} data={orders}></Table>
       </div>
