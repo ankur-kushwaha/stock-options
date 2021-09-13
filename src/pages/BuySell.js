@@ -109,7 +109,7 @@ export default function BuySell({
 
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-    if(!currOrder){
+    if(!currOrder || currOrder.status != 'COMPLETE'){
       log('Invalid OrderID');
       return;
     }
@@ -132,7 +132,7 @@ export default function BuySell({
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
 
-    if(!currOrder){
+    if(!currOrder || currOrder.status != 'COMPLETE'){
       log("Sell Order failed");
       return;
     }
@@ -152,7 +152,7 @@ export default function BuySell({
       transactionType:'SELL',
       quantity: config.quantity
     });
-    if(!currOrder){
+    if(!currOrder || currOrder.status != 'COMPLETE'){
       log('Short Order failed');
       return;
     }
@@ -166,7 +166,7 @@ export default function BuySell({
       transactionType:'BUY',
       quantity:order.quantity
     });
-    if(!currOrder){
+    if(!currOrder || currOrder.status != 'COMPLETE'){
       console.error('Short cover order failed');
       return;
     }
@@ -225,8 +225,10 @@ export default function BuySell({
             let buyPrice = order.average_price||order.price;
             if((item.actual.close - buyPrice) > ((config.minTarget * buyPrice)/100)){
               let closedOrder = await triggerSellOrder(order,item);
-              executedOrders.push(closedOrder.order_id);
-              hasOrdersUpdated++;
+              if(closedOrder){
+                executedOrders.push(closedOrder.order_id);
+                hasOrdersUpdated++;
+              }
             }else{
               log(`Sell order blocked, Min Change: ${(config.minTarget * buyPrice)/100}, Current Chg: ${item.actual.close - buyPrice}, BuyPrice: ${buyPrice}, LTP: ${item.actual.close}, MinTarget: ${config.minTarget}`);
             }
@@ -262,8 +264,10 @@ export default function BuySell({
             log('Triggerring BUY order....');
 
             let newBuyOrder = await triggerBuyOrder(item);
-            orders.push(newBuyOrder);
-            hasOrdersUpdated++;
+            if(newBuyOrder){
+              orders.push(newBuyOrder);
+              hasOrdersUpdated++;
+            }
 
           }else{
             log("BUY orders limit reached",orders);
@@ -277,8 +281,10 @@ export default function BuySell({
             if((order.average_price - item.actual.close) > ((config.minTarget * item.actual.close)/100)){
               log('Triggerring short cover...',order);
               let soldOrder = await triggerShortCover(order,item);
-              executedOrders.push(soldOrder.order_id);
-              hasOrdersUpdated++;
+              if(soldOrder){
+                executedOrders.push(soldOrder.order_id);
+                hasOrdersUpdated++;
+              }
             }else{
               log('Order not eligible for covering',order);
             }
