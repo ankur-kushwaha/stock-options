@@ -68,11 +68,11 @@ export default function useZerodha(){
     return fetch('/api/logout')
   }
 
-  async function getHistory(targetTradingsymbol){
+  async function getHistory(targetTradingsymbol,{interval}={}){
     if(dev){
       return await getMockHistory();
     }else{
-      return await fetch(`/api/getDayHistory-v2?instruments=${targetTradingsymbol}`)
+      return await fetch(`/api/getDayHistory-v2?instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
         .then(res=>res.json())
     }
   }

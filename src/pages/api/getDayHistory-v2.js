@@ -19,7 +19,7 @@ function sleep(ms) {
 }   
 
 async function getDayHistory(tradingsymbol,options={}){
-  let {daysAgo=0} = options;
+  let {daysAgo=0,interval="ONE_MINUTE"} = options;
   await smart_api.generateSession("A631449", "Kushwaha1@")
   let today  = new Date();
 
@@ -35,7 +35,7 @@ async function getDayHistory(tradingsymbol,options={}){
   let params =  {
     "exchange": exchange||'NSE',
     "symboltoken": doc.token,
-    "interval": "ONE_MINUTE",
+    "interval": interval||"ONE_MINUTE",
     "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:10'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:30')//"2021-03-10 09:20"
   }
@@ -76,11 +76,13 @@ async function getDayHistory(tradingsymbol,options={}){
 
 export default async function handler(req, res) {
   
-  let {instruments}  = req.query
+  let {instruments, interval}  = req.query
 
   instruments = instruments.split(",").filter(item=>item.indexOf('BE')==-1)
   
-  let history  =await getDayHistory(instruments[0])
+  let history  =await getDayHistory(instruments[0],{
+    interval
+  })
   res.status(200).json({history})
 }
 

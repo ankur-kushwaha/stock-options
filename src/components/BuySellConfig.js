@@ -90,8 +90,16 @@ export default function BuySellConfig({config,onUpdate}) {
           </div>
 
           <div className="box">
-          
-      
+            <div className="is-size-7">
+    Interval
+            </div>
+            <div className="select is-fullwidth is-small mb-3">
+              <select value={state.interval} onChange={handleChange('interval')}>
+                <option>ONE_MINUTE</option>
+                <option>THREE_MINUTE</option>
+                <option>FIVE_MINUTE</option>
+              </select>
+            </div>
             <ConfigItem type="number" title="Max Order" value={state.maxOrder} onChange={handleChange('maxOrder','number')}/>
             <ConfigItem type="number" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
             <ConfigItem type="number" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>

@@ -37,7 +37,8 @@ export default function BuySell({
     quantity : userProfile.configs?.quantity || 100,
     isBullish: !!userProfile.configs?.isBullish,
     isBearish: !!userProfile.configs?.isBearish,
-    marketOrder: !!userProfile.configs?.marketOrder
+    marketOrder: !!userProfile.configs?.marketOrder,
+    interval:userProfile.configs?.interval||'ONE_MINUTE'
   }
   const [config,setConfig] = React.useState(defaultConfig);
   
@@ -71,7 +72,9 @@ export default function BuySell({
 
     async function fetchHistory(){
 
-      let res = await getHistory(tradingsymbol);
+      let res = await getHistory(tradingsymbol,{
+        interval:config.interval
+      });
 
       if(config.shouldRun){
         setHistory(res.history);
