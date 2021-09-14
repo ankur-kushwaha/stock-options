@@ -314,21 +314,22 @@ export default function BuySell({
     cell:row=><Price>{row.profit}</Price>
   },{
     name:"Delete",
-    cell:row=><button className="button is-small" onClick={deletePosition(row,'closedOrders')}>Delete</button>
+    cell:row=><button className="button is-small" onClick={deletePosition(row,'closedOrders')}><span className="icon has-text-info">
+      <i className="fas fa-times-circle"></i>
+    </span></button>
   }]
 
+  const BaseExpandedComponent = ({data})=><div className={"box"}>
+    <span className="is-size-7">
+      OrderID:{data.order_id}
+    </span>
+  </div>;
+
   let orderColumns=[{
-    name:'Tradingsymbol',
-    selector:'tradingsymbol',
-    wrap:true
-  },{
-    name:'Order ID',
-    selector:'order_id',
-    grow:1
-  },{
     name:'Timestamp',
     selector:'order_timestamp',
-    wrap:true
+    grow:2,
+    wrap:false
   },{
     name:'Quantity',
     selector:'quantity'
@@ -336,13 +337,13 @@ export default function BuySell({
     name:'Status',
     selector:'status'
   },{
+    name:'Buy Price',
+    selector:'average_price',
+    cell:row=><>{row.average_price||row.price}</>
+  },{
     name:'LTP',
     selector:'price',
     cell:()=><>{state.closePrice}</>
-  },{
-    name:'Buy/Sell Price',
-    selector:'average_price',
-    cell:row=><>{row.average_price||row.price}</>
   },{
     name:'PnL',
     selector:'pnl',
@@ -352,10 +353,13 @@ export default function BuySell({
       </div>
   },{
     name:"Buy/Sell",
-    cell:row=><button className="button is-small" onClick={closePosition(row)}>Close Now</button>
+    cell:row=><button className="button is-small" onClick={closePosition(row)}>Sell</button>
   },{
     name:"Delete",
-    cell:row=><button className="button is-small" onClick={deletePosition(row,'orders')}>Delete</button>
+    cell:row=><button className="button is-small" onClick={deletePosition(row,'orders')}>
+      <span className="icon has-text-info">
+        <i className="fas fa-times-circle"></i>
+      </span></button>
   }];
 
   const deletePosition = (order,type='orders')=>async ()=>{
@@ -466,6 +470,9 @@ export default function BuySell({
     return order;
   });
 
+
+
+
   return (
     <div >
       <Head>
@@ -488,7 +495,13 @@ export default function BuySell({
           </div>
 
           <div className="column">
-            <Table title={"Open Orders"} columns={orderColumns} data={orders}></Table>
+            <Table 
+              title={"Open Orders"} 
+              columns={orderColumns} 
+              data={orders}
+              expandableRows={true}
+              ExpandedComponent={<BaseExpandedComponent/>}
+            ></Table>
             {state.closedOrders.length>0 &&
             <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
             }

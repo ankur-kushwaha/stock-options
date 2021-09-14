@@ -2,11 +2,11 @@ import React from 'react'
 import DataTable from 'react-data-table-component';
 import Cell from './Cell';
 
-const ExpandedComponent = ({ data }) => <pre>
+const BaseExpandedComponent = ({ data }) => <pre>
   {JSON.stringify(data, null, 2)}</pre>;
 
 
-export default function Table({ pagination=true,title,data,columns }) { 
+export default function Table({ pagination=true,title,data,columns ,ExpandedComponent,expandableRows}) { 
   const handleClick = (item, type) => () => {
     let price = item.price,transactionType='BUY';
         
@@ -111,6 +111,8 @@ export default function Table({ pagination=true,title,data,columns }) {
         fixedHeader={true}
         columns={columns}
         data={data}
+        expandableRows={expandableRows||false}
+        expandableRowsComponent={ExpandedComponent||<BaseExpandedComponent/>}
       />
     </div>
   )
