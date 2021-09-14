@@ -32,11 +32,9 @@ export default function BuySell({
   let defaultConfig = {
     tradingsymbol,
     maxOrder: userProfile.configs?.maxOrder || 3,
-    maxShortOrder: userProfile.configs?.maxShortOrder || 1,
     minTarget:  userProfile.configs?.minTarget || 10,
     quantity : userProfile.configs?.quantity || 100,
     isBullish: !!userProfile.configs?.isBullish,
-    isBearish: !!userProfile.configs?.isBearish,
     marketOrder: !!userProfile.configs?.marketOrder,
     interval:userProfile.configs?.interval||'ONE_MINUTE'
   }
@@ -49,7 +47,6 @@ export default function BuySell({
     profitArr:[],
     tradeCount:0,
     orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
-    shortOrders: userProfile.shortOrders?.filter(item=>item.tradingsymbol == tradingsymbol),
     closedOrders: userProfile.closedOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
     closePrice:0
   });
@@ -151,39 +148,6 @@ export default function BuySell({
 
   }
 
-  async function triggerShortOrder(item){
-    let currOrder = await createOrder(item,{
-      transactionType:'SELL',
-      quantity: config.quantity
-    });
-    if(!currOrder || currOrder.status != 'COMPLETE'){
-      log('Short Order failed');
-      return;
-    }
-    return currOrder;
-  }
-
-  async function triggerShortCover(order,item){
-    
-
-    let currOrder = await createOrder(item,{
-      transactionType:'BUY',
-      quantity:order.quantity
-    });
-    if(!currOrder || currOrder.status != 'COMPLETE'){
-      console.error('Short cover order failed');
-      return;
-    }
-
-    order.buyPrice = currOrder.average_price||currOrder.price;
-    order.sellPrice = order.average_price;
-
-    order.profit = ( order.sellPrice - order.buyPrice ) * order.quantity;
-    order.closingOrder = currOrder;
-
-    return order;
-  }
-
   // Buy/Sell
   React.useEffect(async ()=>{
     
@@ -198,7 +162,7 @@ export default function BuySell({
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
     let orders = [...state.orders];
-    let shortOrders = [...state.shortOrders];
+    
     let closedOrders = [...state.closedOrders];
 
     let newTrend = item.signal=='GREEN'?"UP":"DOWN";
@@ -241,18 +205,6 @@ export default function BuySell({
           closedOrders = closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
           orders = orders.filter(item=>!executedOrders.includes(item.order_id));
         }
-        if(config.isBearish && shortOrders.length < config.maxShortOrder){
-          log('Brearish flag is enabled, Triggering short order...');
-          let currOrder = await triggerShortOrder(item);
-          if(currOrder){
-            shortOrders.push(currOrder);
-            hasOrdersUpdated++;
-          }
-        }else{
-          if(config.isBearish){
-            log('Short order capacity reached', shortOrders);
-          }
-        }
 
       }
 
@@ -277,25 +229,6 @@ export default function BuySell({
             log("BUY orders limit reached",orders);
           }
         }
-        
-        if(config.isBearish){
-          log('Bearish flag is enabled, checking open short orders', shortOrders);
-          let executedOrders=[]
-          for(let order of shortOrders){
-            if((order.average_price - item.actual.close) > ((config.minTarget * item.actual.close)/100)){
-              log('Triggerring short cover...',order);
-              let soldOrder = await triggerShortCover(order,item);
-              if(soldOrder){
-                executedOrders.push(soldOrder.order_id);
-                hasOrdersUpdated++;
-              }
-            }else{
-              log('Order not eligible for covering',order);
-            }
-          }
-          closedOrders = closedOrders.concat(shortOrders.filter(item=>executedOrders.includes(item.order_id)))
-          shortOrders = shortOrders.filter(item=>!executedOrders.includes(item.order_id))
-        }
       } 
     }
 
@@ -307,7 +240,6 @@ export default function BuySell({
       profit,
       closedOrders,
       orders,
-      shortOrders,
       profitArr,
       closePrice: item.actual.close
     })
@@ -337,7 +269,6 @@ export default function BuySell({
   const save = React.useCallback(async function save({
     newConfig,
     orders,
-    shortOrders,
     closedOrders
   }={}){
     addToast('Saving User');
@@ -347,14 +278,13 @@ export default function BuySell({
       session:{
         configs:newConfig||config,
         orders:orders||state.orders,
-        shortOrders:shortOrders||state.shortOrders,
         closedOrders:closedOrders||state.closedOrders
       }
     };
     log('Saving user',data);
     await postData('/api/updateUser',data);
     
-  },[config,state.orders,state.shortOrders])
+  },[config,state.orders])
 
   async function handleUpdate(config){
     setConfig(config);
@@ -443,19 +373,15 @@ export default function BuySell({
 
   const closePosition = (order)=>async ()=>{
     let orders = [...state.orders];
-    let shortOrders = [...state.shortOrders];
     let closedOrders = [...state.closedOrders];
 
     if(order.transaction_type == 'BUY'){
       orders = orders.filter(item=>item.order_id != order.order_id);
-    }else{
-      shortOrders =  shortOrders.filter(item=>item.order_id != order.order_id);
     }
 
     setState({
       ...state,
-      orders,
-      shortOrders
+      orders
     })
 
     let currOrder = await createOrder({
@@ -487,14 +413,12 @@ export default function BuySell({
 
       await save({
         orders,
-        shortOrders,
         closedOrders
       });
 
       setState({
         ...state,
         orders,
-        shortOrders,
         closedOrders
       })
       
@@ -542,15 +466,6 @@ export default function BuySell({
     return order;
   });
 
-  let shortOrders = state.shortOrders.map(order=>{
-    let sellPrice = (order.average_price||order.price)
-
-    order.profit = (sellPrice - state.closePrice ) * order.quantity;
-    totalProfit += order.profit;
-    order.profitPct = (sellPrice - state.closePrice ) * 100/state.closePrice;
-    return order;
-  });
-
   return (
     <div >
       <Head>
@@ -574,9 +489,6 @@ export default function BuySell({
 
           <div className="column">
             <Table title={"Open Orders"} columns={orderColumns} data={orders}></Table>
-            {state.shortOrders.length>0 &&
-            <Table title={"Open Short Orders"} columns={orderColumns} data={shortOrders}></Table>
-            }
             {state.closedOrders.length>0 &&
             <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
             }
@@ -609,11 +521,9 @@ export async function getServerSideProps(ctx) {
   let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
 
   let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];
-  // console.log(123,session)
 
   userProfile.configs = session?.data.configs||dbUser.configs||{};
   userProfile.orders = session?.data.orders||[]
-  userProfile.shortOrders = session?.data.shortOrders||[];
   userProfile.closedOrders = session?.data.closedOrders||[];
   
 

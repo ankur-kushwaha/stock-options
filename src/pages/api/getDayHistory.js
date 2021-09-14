@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   let quantity = Number(req.query.quantity)||200;
   let minChange = Number(req.query.minChange)||10;
 
-  let trySelling = false;
+  let trySelling = true;
 
   for(let item of history){
     let currTrend = item.signal == 'GREEN'?"UP":"DOWN";
@@ -64,14 +64,17 @@ export default async function handler(req, res) {
 
         if(trySelling){
           if(remainingOrders.length != 0 && (remainingOrders.length == orders.length) && orders.length == maxOrder){
+            
+            // let orderToDelete = orders.shift();
 
-            //sell order with maxProfit;
+
+            // //sell order with maxProfit;
             let orderToDelete = orders.filter(item=>item.timestamp == maxProfitOrderTimestamp)[0];
             let currProfit = (item.actual.close - orderToDelete.actual.close) * quantity;
             profit += currProfit;
             profitArr.push(currProfit);
 
-            remainingOrders = orders.filter(item=>item.timestamp != maxProfitOrderTimestamp);
+            remainingOrders = orders;
             
           }
         }

@@ -120,15 +120,7 @@ export default function BuySellConfig({config,onUpdate,triggerNow}) {
                 </span>
               </label>
             </div>
-            <div>
-              <label className="checkbox">
-                <input checked={state.isBearish} type="checkbox" onChange={handleChange('isBearish')}/>
-          &nbsp;
-                <span className="is-size-7">
-            Bearish Market
-                </span>
-              </label>
-            </div>
+          
             <br />
       
             <button className="is-fullwidth mb-2 button is-small" onClick={handleClickUpdate}>Update Settings</button>

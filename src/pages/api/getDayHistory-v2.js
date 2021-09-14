@@ -24,7 +24,7 @@ async function getDayHistory(tradingsymbol,options={}){
   let today  = new Date();
 
   let toDate = date.addDays(today,-daysAgo)
-  const fromDate = date.addDays(today,-daysAgo)
+  const fromDate = date.addDays(today,-daysAgo-1)
 
   let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol});
   let token = zerodhaInstrument.toObject().exchange_token;
@@ -36,13 +36,15 @@ async function getDayHistory(tradingsymbol,options={}){
     "exchange": exchange||'NSE',
     "symboltoken": doc.token,
     "interval": interval||"ONE_MINUTE",
-    "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:10'),  //"2021-02-10 09:00",
-    "todate":  date.format(toDate, 'YYYY-MM-DD 15:30')//"2021-03-10 09:20"
+    "fromdate": date.format(fromDate, 'YYYY-MM-DD 15:00'),  //"2021-02-10 09:00",
+    "todate":  date.format(toDate, 'YYYY-MM-DD 15:40')//"2021-03-10 09:20"
   }
   let response = await smart_api.getCandleData(params)
   let data = response.data;
+  console.log('res',response)
   if(data == null){
-    return [];
+    console.log(params);
+    throw new Error('No history response from server');
   }
   
   let first = data[0];
