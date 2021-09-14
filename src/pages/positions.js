@@ -276,6 +276,10 @@ function getStockCode(tradingsymbol){
     if(stockCode == 'NIFTY'){
       stockCode = 'NIFTY 50';
     }
+    if(stockCode == 'BANKNIFTY'){
+      stockCode = 'NIFTY BANK'
+    }
+    
   }catch(e){
     console.log('tradingsymbol',tradingsymbol);
     throw e;
