@@ -239,6 +239,14 @@ export default function BuySell({
       } 
     }
 
+    if(state.hasOrdersUpdated != hasOrdersUpdated){
+      await save({
+        orders,
+        closedOrders
+      })
+    }
+    
+
     setState({
       pendingOrders,
       hasOrdersUpdated,
