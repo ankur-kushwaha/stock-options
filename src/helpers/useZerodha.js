@@ -46,10 +46,10 @@ export default function useZerodha(){
     if(dev){
       
       url = url+"&variety=amo"
-      // let res = await fetch(url).then(res=>res.json());
-      // return res.data.order_id;
-      console.log(url);
-      return await Promise.resolve(210912100008713);
+      let res = await fetch(url).then(res=>res.json());
+      return res.data?.order_id;
+      // console.log(url);
+      // return await Promise.resolve(210912100008713);
 
     }else{
       let res = await fetch(url).then(res=>res.json());

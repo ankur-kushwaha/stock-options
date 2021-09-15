@@ -2,10 +2,11 @@ import { getDayHistory } from "./getDayHistory-v2";
 
 export default async function handler(req, res) {
   // await smart_api.generateSession("A631449", "Kushwaha1@")
-  let {daysAgo,tradingsymbol}  = req.query
+  let {daysAgo,tradingsymbol,interval}  = req.query
 
   let history = await getDayHistory(tradingsymbol,{
-    daysAgo
+    daysAgo,
+    interval
   });
   
 
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
   let quantity = Number(req.query.quantity)||200;
   let minChange = Number(req.query.minChange)||10;
 
-  let trySelling = true;
+  let trySelling = false;
 
   for(let item of history){
     let currTrend = item.signal == 'GREEN'?"UP":"DOWN";

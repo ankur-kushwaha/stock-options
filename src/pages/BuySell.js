@@ -48,7 +48,8 @@ export default function BuySell({
     tradeCount:0,
     orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
     closedOrders: userProfile.closedOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
-    closePrice:0
+    closePrice:0,
+    pendingOrders:[]
   });
 
   React.useEffect(()=>{
@@ -110,7 +111,7 @@ export default function BuySell({
 
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-    if(!currOrder || currOrder.status != 'COMPLETE'){
+    if(!currOrder){
       log('Invalid OrderID');
       return;
     }
@@ -133,7 +134,7 @@ export default function BuySell({
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
 
-    if(!currOrder || currOrder.status != 'COMPLETE'){
+    if(!currOrder ){
       log("Sell Order failed");
       return;
     }
@@ -164,6 +165,7 @@ export default function BuySell({
     let orders = [...state.orders];
     
     let closedOrders = [...state.closedOrders];
+    let pendingOrders = [...state.pendingOrders];
 
     let newTrend = item.signal=='GREEN'?"UP":"DOWN";
     
@@ -193,7 +195,9 @@ export default function BuySell({
             let buyPrice = order.average_price||order.price;
             if((item.actual.close - buyPrice) > ((config.minTarget * buyPrice)/100)){
               let closedOrder = await triggerSellOrder(order,item);
-              if(closedOrder){
+              if( closedOrder && closedOrder.status != 'COMPLETE'){
+                pendingOrders.push(closedOrder);
+              }else if(closedOrder){
                 executedOrders.push(closedOrder.order_id);
                 hasOrdersUpdated++;
               }
@@ -220,7 +224,10 @@ export default function BuySell({
             log('Triggerring BUY order....');
 
             let newBuyOrder = await triggerBuyOrder(item);
-            if(newBuyOrder){
+
+            if(newBuyOrder && newBuyOrder.status != 'COMPLETE'){
+              pendingOrders.push(newBuyOrder);
+            }else if(newBuyOrder){
               orders.push(newBuyOrder);
               hasOrdersUpdated++;
             }
@@ -233,6 +240,7 @@ export default function BuySell({
     }
 
     setState({
+      pendingOrders,
       hasOrdersUpdated,
       currTrend:newTrend,
       tradeCount,
@@ -243,6 +251,10 @@ export default function BuySell({
       profitArr,
       closePrice: item.actual.close
     })
+
+    if(pendingOrders.length>0){
+      await refreshPendingOrders()
+    }
 
   },[history.length])
 
@@ -266,7 +278,7 @@ export default function BuySell({
     return currOrder;
   }
 
-  const save = React.useCallback(async function save({
+  async function save({
     newConfig,
     orders,
     closedOrders
@@ -284,7 +296,7 @@ export default function BuySell({
     log('Saving user',data);
     await postData('/api/updateUser',data);
     
-  },[config,state.orders])
+  }
 
   async function handleUpdate(config){
     setConfig(config);
@@ -324,6 +336,29 @@ export default function BuySell({
       OrderID:{data.order_id}
     </span>
   </div>;
+
+  let pendingOrderColumns = [{
+    name:'Timestamp',
+    selector:'order_timestamp',
+    grow:2,
+    wrap:false
+  },{
+    name:'Quantity',
+    selector:'quantity'
+  },{
+    name:'Status',
+    selector:'status'
+  },{
+    name:'Buy Price',
+    selector:'average_price',
+    cell:row=><>{row.price}</>
+  },{
+    name:"Delete",
+    cell:row=><button className="button is-small" onClick={deletePosition(row,'pendingOrders')}>
+      <span className="icon has-text-info">
+        <i className="fas fa-times-circle"></i>
+      </span></button>
+  }]
 
   let orderColumns=[{
     name:'Timestamp',
@@ -471,6 +506,34 @@ export default function BuySell({
   });
 
 
+  async function refreshPendingOrders(){
+    let response = await fetch('api/getOrders').then(res=>res.json())
+    let pendingOrders = [...state.pendingOrders]
+    let pendingOrdersId = pendingOrders.map(item=>item.order_id);
+
+    let orders = [...state.orders];
+    let closedOrders = [...state.closedOrders];
+
+    for(let order of response){
+      if(order.status =='COMPLETE' && pendingOrdersId.includes(order.order_id)){
+        if(order.transaction_type == 'BUY'){
+          orders.push(order);
+        }else{
+          closedOrders.push(order);
+        }
+        pendingOrders = pendingOrders.filter(item=>item.order_id != order.order_id);
+      }
+    }
+
+    setState({
+      ...state,
+      pendingOrders,
+      closedOrders,
+      orders
+    })
+
+  }
+
 
 
   return (
@@ -494,7 +557,21 @@ export default function BuySell({
              
           </div>
 
+
+
           <div className="column">
+            {state.pendingOrders.length>0 && <>
+              <button className="button is-small" onClick={refreshPendingOrders}>
+                Refersh Pending Orders
+              </button>
+              <Table 
+                title={"Pending Orders"} 
+                columns={pendingOrderColumns} 
+                data={state.pendingOrders}
+                expandableRows={true}
+                ExpandedComponent={<BaseExpandedComponent/>}
+              ></Table>
+            </>}
             <Table 
               title={"Open Orders"} 
               columns={orderColumns} 
