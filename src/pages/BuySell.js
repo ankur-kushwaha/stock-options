@@ -425,8 +425,10 @@ export default function BuySell({
     let orders = [...state.orders];
     let closedOrders = [...state.closedOrders];
 
-    if(order.transaction_type == 'BUY'){
+    if(order.order_id){
       orders = orders.filter(item=>item.order_id != order.order_id);
+    }else{
+      orders = orders.filter(item=>item.order_id);
     }
 
     setState({
@@ -439,20 +441,17 @@ export default function BuySell({
         close:state.closePrice
       }
     },{
-      transactionType:order.transaction_type=='BUY'?'SELL':'BUY',
+      transactionType:'SELL',
       quantity:order.quantity
     })
 
     if(currOrder){
       let sellPrice,buyPrice;
 
-      if(order.transaction_type=='BUY'){
-        buyPrice = order.average_price;
-        sellPrice = currOrder.average_price || currOrder.price;
-      }else{
-        sellPrice = order.average_price;
-        buyPrice = currOrder.average_price || currOrder.price
-      }
+      
+      buyPrice = order.average_price;
+      sellPrice = currOrder.average_price || currOrder.price;
+      
 
       order.sellPrice = sellPrice;
       order.buyPrice = order.average_price;
