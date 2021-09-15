@@ -342,6 +342,9 @@ export default function BuySell({
   const BaseExpandedComponent = ({data})=><div className={"box"}>
     <span className="is-size-7">
       OrderID:{data.order_id}
+    </span><br />
+    <span className="is-size-7">
+      Timestamp:{data.timestamp}
     </span>
   </div>;
 
@@ -369,8 +372,8 @@ export default function BuySell({
   }]
 
   let orderColumns=[{
-    name:'Timestamp',
-    selector:'order_timestamp',
+    name:'TradingSymbol',
+    selector:'tradingsymbol',
     grow:2,
     wrap:false
   },{
@@ -543,6 +546,21 @@ export default function BuySell({
   }
 
 
+  async function importOrders(){
+    let orders = await fetch('/api/positions').then(res=>res.json());
+    orders = orders.positions.net.filter(order=>{
+      return order.tradingsymbol==tradingsymbol && order.quantity>0
+    });
+
+    setState({
+      ...state,
+      orders
+    })
+    
+    await save({
+      orders
+    })
+  }
 
   return (
     <div >
@@ -554,14 +572,13 @@ export default function BuySell({
       {/* <button onClick={save}>Save</button> */}
       <Header userProfile={userProfile} tab="BuySell"></Header>
 
-
       <div className="container mt-5">
 
         <div className="columns is-gapless">
 
           <div className="column is-3">
             
-            <BuySellConfig config={config} triggerNow={triggerNow} onUpdate={handleUpdate}></BuySellConfig>
+            <BuySellConfig importStock = {importOrders}config={config} triggerNow={triggerNow} onUpdate={handleUpdate}></BuySellConfig>
              
           </div>
 

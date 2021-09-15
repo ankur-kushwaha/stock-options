@@ -3,6 +3,7 @@ import React from 'react'
 function ConfigItem({
   title,onChange,
   type="text",
+  
   value
 }){
 
@@ -17,7 +18,7 @@ function ConfigItem({
   </div></>)
 }
 
-export default function BuySellConfig({config,onUpdate,triggerNow}) {
+export default function BuySellConfig({config,onUpdate,triggerNow,importStock,}) {
   
   const [state,setState] = React.useState({
     ...config,
@@ -85,6 +86,7 @@ export default function BuySellConfig({config,onUpdate,triggerNow}) {
           <div className="box">
             <ConfigItem title="Tradingsymbol" value={state.tradingsymbol} onChange={handleChange('tradingsymbol','text')}/>
             <button className="button is-small is-pulled-right" onClick={handleSymbolChange}>Update Stock</button>
+            <button className="button mr-2 is-small is-pulled-right" onClick={importStock}>Import Stock</button>
             <div className="is-clearfix"></div>
           </div>
 
