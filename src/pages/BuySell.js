@@ -269,13 +269,15 @@ export default function BuySell({
       orders,
       profitArr,
       closePrice: item.actual.close
-    })
-
-    if(pendingOrders.length>0){
-      await refreshPendingOrders(pendingOrders)
-    }
+    });
 
   },[history.length])
+
+  React.useEffect(async ()=>{
+    if(history.length>0 && state.pendingOrders.length>0){
+      await refreshPendingOrders()
+    }
+  },[history.length]);
 
   async function createOrder(item,{
     transactionType,
@@ -545,6 +547,7 @@ export default function BuySell({
 
 
   async function refreshPendingOrders(pendingOrders){
+    log('refreshing pending orders....');
     let response = await fetch('api/getOrders').then(res=>res.json())
     pendingOrders = pendingOrders||[...state.pendingOrders]
     let pendingOrdersId = pendingOrders.map(item=>item.order_id);
