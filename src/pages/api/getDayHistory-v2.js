@@ -36,15 +36,16 @@ async function getDayHistory(tradingsymbol,options={}){
     "exchange": exchange||'NSE',
     "symboltoken": doc.token,
     "interval": interval||"ONE_MINUTE",
-    "fromdate": date.format(fromDate, 'YYYY-MM-DD 15:00'),  //"2021-02-10 09:00",
+    "fromdate": date.format(fromDate, 'YYYY-MM-DD 14:00'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:40')//"2021-03-10 09:20"
   }
   let response = await smart_api.getCandleData(params)
   let data = response.data;
-  console.log('res',response)
   if(data == null){
+    console.log('res',response)
     console.log(params);
     throw new Error('No history response from server');
+    // data=[]
   }
   
   let first = data[0];

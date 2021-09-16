@@ -162,7 +162,7 @@ nextApp.prepare().then(() => {
   })
     
   mongoose.connect('mongodb+srv://ankur:ankur@cluster0.wgb6k.mongodb.net/myFirstDatabase?retryWrites=true&w=majority' ,{
-    useNewUrlParser: true
+    useNewUrlParser: false
   } ,(err) => {
     console.log('mongodb connected',err);
   })

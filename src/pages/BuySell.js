@@ -10,7 +10,7 @@ import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
 import Head from 'next/head'
 import { useToasts } from 'react-toast-notifications'
-
+import fetch from '../helpers/fetch';
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -55,7 +55,7 @@ export default function BuySell({
   React.useEffect(()=>{
     log(userProfile);
 
-    fetch('api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
+    fetch('/api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
       let quote = res.quotes['NFO:'+tradingsymbol];
       if(!quote){
         console.log('Quote not available for ', tradingsymbol)
@@ -344,7 +344,7 @@ export default function BuySell({
       OrderID:{data.order_id}
     </span><br />
     <span className="is-size-7">
-      Timestamp:{data.timestamp}
+      Timestamp:{data.order_timestamp}
     </span>
   </div>;
 
@@ -445,14 +445,17 @@ export default function BuySell({
       quantity:order.quantity
     })
 
-    if(currOrder){
-      let sellPrice,buyPrice;
+    let pendingOrders = [...state.pendingOrders];
+    
+    if(currOrder && currOrder.status != 'COMPLETE'){
+      pendingOrders.push(currOrder);
+    } else if(currOrder) {
 
+      let sellPrice,buyPrice;
       
       buyPrice = order.average_price;
       sellPrice = currOrder.average_price || currOrder.price;
       
-
       order.sellPrice = sellPrice;
       order.buyPrice = order.average_price;
       order.profit = (sellPrice - buyPrice) * order.quantity;
@@ -460,20 +463,22 @@ export default function BuySell({
   
       closedOrders.push(order);
 
-      await save({
-        orders,
-        closedOrders
-      });
-
-      setState({
-        ...state,
-        orders,
-        closedOrders
-      })
-      
-    }else{
+    } else {
       log('Sell order failed ',order);
     }
+
+    setState({
+      ...state,
+      orders,
+      pendingOrders,
+      closedOrders
+    })
+
+    await save({
+      orders,
+      pendingOrders,
+      closedOrders
+    });
   }
 
   function log(...args){

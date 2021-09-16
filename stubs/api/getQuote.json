@@ -1,0 +1,83 @@
+{
+    "quotes": {
+        "NFO:BAJAJFINSV21SEP15700CE": {
+            "instrument_token": 16906754,
+            "timestamp": "2021-09-15T11:39:58.000Z",
+            "last_trade_time": "2021-09-14T09:54:50.000Z",
+            "last_price": 1300,
+            "last_quantity": 75,
+            "buy_quantity": 1875,
+            "sell_quantity": 1575,
+            "volume": 0,
+            "average_price": 0,
+            "oi": 900,
+            "oi_day_high": 0,
+            "oi_day_low": 0,
+            "net_change": 0,
+            "lower_circuit_limit": 32.2,
+            "upper_circuit_limit": 2732,
+            "ohlc": {
+                "open": 0,
+                "high": 0,
+                "low": 0,
+                "close": 1300
+            },
+            "depth": {
+                "buy": [
+                    {
+                        "price": 980.05,
+                        "quantity": 225,
+                        "orders": 1
+                    },
+                    {
+                        "price": 980,
+                        "quantity": 150,
+                        "orders": 2
+                    },
+                    {
+                        "price": 943.8,
+                        "quantity": 1500,
+                        "orders": 1
+                    },
+                    {
+                        "price": 0,
+                        "quantity": 0,
+                        "orders": 0
+                    },
+                    {
+                        "price": 0,
+                        "quantity": 0,
+                        "orders": 0
+                    }
+                ],
+                "sell": [
+                    {
+                        "price": 1550,
+                        "quantity": 75,
+                        "orders": 1
+                    },
+                    {
+                        "price": 1857.75,
+                        "quantity": 1500,
+                        "orders": 1
+                    },
+                    {
+                        "price": 0,
+                        "quantity": 0,
+                        "orders": 0
+                    },
+                    {
+                        "price": 0,
+                        "quantity": 0,
+                        "orders": 0
+                    },
+                    {
+                        "price": 0,
+                        "quantity": 0,
+                        "orders": 0
+                    }
+                ]
+            }
+        }
+    }
+}
