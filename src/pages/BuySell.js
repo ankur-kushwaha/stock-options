@@ -70,7 +70,7 @@ export default function BuySell({
         let closePrice = (ticks[quote.instrument_token].depth.buy[0].price+ticks[quote.instrument_token].depth.sell[0].price)/2;
         setState({
           ...state,
-          closePrice:Number(closePrice.toFixed(2))
+          closePrice:Number(closePrice.toFixed(1))
         })
       });
     });
