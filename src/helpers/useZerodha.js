@@ -1,5 +1,5 @@
 import { useToasts } from 'react-toast-notifications'
-const dev = process.env.NODE_ENV !== 'production';
+const dev = false;//process.env.NODE_ENV !== 'production';
 
 export default function useZerodha(){
   const { addToast } = useToasts()

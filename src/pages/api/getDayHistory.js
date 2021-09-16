@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   let prevTrend;
   let orders = [];
   let maxOrder = Number(req.query.maxOrder)||10;
-  let quantity = Number(req.query.quantity)||200;
+  let quantity = Number(req.query.quantity)||100;
   let minChange = Number(req.query.minChange)||10;
 
   let trySelling = false;
