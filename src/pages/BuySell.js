@@ -484,7 +484,7 @@ export default function BuySell({
     let logStr = JSON.stringify(args);
 
     if(logStr.length>100){
-      logStr.length = 100;
+      logStr = logStr.substring(0,100)
     }
 
     addToast(logStr);
