@@ -66,6 +66,7 @@ export default function BuySell({
         ...state,
         closePrice:quote.depth.buy[0].price||quote.last_price
       })
+      
       getTicks([quote.instrument_token],(ticks)=>{
         let closePrice = (ticks[quote.instrument_token].depth.buy[0].price+ticks[quote.instrument_token].depth.sell[0].price)/2;
         setState({
@@ -74,8 +75,6 @@ export default function BuySell({
         })
       });
     });
-
-    
     
   },[])
 
