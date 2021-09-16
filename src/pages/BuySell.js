@@ -171,7 +171,6 @@ export default function BuySell({
     
     let trendReverse = false;
     if(state.currTrend && (state.currTrend != newTrend)){
-      log("Trend reversed ", state.currTrend,newTrend);
       trendReverse = true;
     }else{
       log("Trend continuing... ", newTrend);
@@ -291,7 +290,7 @@ export default function BuySell({
     orders,
     closedOrders
   }={}){
-    addToast('Saving User');
+    addToast('Saving...');
     let data = {
       userId:userProfile.user_id,
       tradingsymbol,
@@ -482,10 +481,14 @@ export default function BuySell({
   }
 
   function log(...args){
-    if(JSON.stringify(args).length<50){
-      addToast(args);
+    let logStr = JSON.stringify(args);
+
+    if(logStr.length>100){
+      logStr.length = 100;
     }
-      
+
+    addToast(logStr);
+    
     console.log(args);
   }
 
