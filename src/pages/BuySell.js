@@ -53,6 +53,8 @@ export default function BuySell({
     pendingOrders:userProfile.pendingOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
   });
 
+  let [closePrice,setClosePrice] = React.useState(0);
+
   React.useEffect(()=>{
     log(userProfile);
 
@@ -66,17 +68,26 @@ export default function BuySell({
         ...state,
         closePrice:quote.depth.buy[0].price||quote.last_price
       })
-      
+
+      setConfig({
+        ...config,
+        instrumentToken:quote.instrument_token
+      })
+
       getTicks([quote.instrument_token],(ticks)=>{
         let closePrice = (ticks[quote.instrument_token].depth.buy[0].price+ticks[quote.instrument_token].depth.sell[0].price)/2;
-        setState({
-          ...state,
-          closePrice:Number(closePrice.toFixed(1))
-        })
+        setClosePrice(Number(closePrice.toFixed(1)));
       });
     });
     
   },[])
+
+  React.useEffect(()=>{
+    setState({
+      ...state,
+      closePrice
+    })
+  },[closePrice])
 
   // Trigger trading
   React.useEffect(()=>{ 
@@ -110,13 +121,14 @@ export default function BuySell({
       quantity:config.quantity,
       price: config.marketOrder?'MARKET':state.closePrice
     });
+    
+    await sleep(1000);
 
     if(orderId == null){
       log("Create order failed");
       return ;
     }
 
-    await sleep(1000);
 
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
@@ -167,7 +179,7 @@ export default function BuySell({
     }
 
     let item = history[history.length-1];
-    log('history updated, last quote: ',item.actual.close ,item);
+    log('history updated, last quote: ',item.actual.close ,item.timestamp,item);
 
     let {tradeCount,profit} = state;
     let profitArr = [...state.profitArr];
@@ -201,7 +213,7 @@ export default function BuySell({
           let executedOrders = [];
           for(let order of orders){
             let buyPrice = order.average_price||order.price;
-            if((item.actual.close - buyPrice) > ((config.minTarget * buyPrice)/100)){
+            if((state.closePrice - buyPrice) > ((config.minTarget * buyPrice)/100)){
               let closedOrder = await triggerSellOrder(order,item);
               if( closedOrder && closedOrder.status != 'COMPLETE'){
                 pendingOrders.push(closedOrder);
@@ -210,7 +222,7 @@ export default function BuySell({
               }
               hasOrdersUpdated++;
             }else{
-              log(`Sell order blocked, Min Change: ${(config.minTarget * buyPrice)/100}, Current Chg: ${item.actual.close - buyPrice}, BuyPrice: ${buyPrice}, LTP: ${item.actual.close}, MinTarget: ${config.minTarget}`);
+              log(`Sell order blocked, Min Change: ${(config.minTarget * buyPrice)/100}, Current Chg: ${state.closePrice - buyPrice}, BuyPrice: ${buyPrice}, LTP: ${state.closePrice}, MinTarget: ${config.minTarget}`);
             }
           }
           //Remove executed orders
@@ -266,8 +278,7 @@ export default function BuySell({
       profit,
       closedOrders,
       orders,
-      profitArr,
-      closePrice: item.actual.close
+      profitArr
     });
 
   },[history.length])
@@ -287,7 +298,7 @@ export default function BuySell({
       transactionType : transactionType||"SELL",
       tradingsymbol,
       quantity : quantity || config.quantity,
-      price : config.marketOrder ? 'MARKET' : item.actual.close
+      price : config.marketOrder ? 'MARKET' : state.closePrice
     });
 
     await sleep(1000);
@@ -387,7 +398,8 @@ export default function BuySell({
     name:'TradingSymbol',
     selector:'tradingsymbol',
     grow:2,
-    wrap:false
+    wrap:false,
+    cell:row=><a target="_blank" href={`https://kite.zerodha.com/chart/ext/ciq/NFO-OPT/${row.tradingsymbol}/${config.instrumentToken}` } rel="noreferrer">{row.tradingsymbol}</a>
   },{
     name:'Quantity',
     selector:'quantity'
@@ -473,7 +485,7 @@ export default function BuySell({
       order.profit = (sellPrice - buyPrice) * order.quantity;
       order.profitPct = (sellPrice - buyPrice)/buyPrice*100;
   
-      closedOrders.push(order);
+      closedOrders.unshift(order);
 
     } else {
       log('Sell order failed ',order);
@@ -559,7 +571,7 @@ export default function BuySell({
         if(order.transaction_type == 'BUY'){
           orders.push(order);
         }else{
-          closedOrders.push(order);
+          closedOrders.unshift(order);
         }
         pendingOrders = pendingOrders.filter(item=>item.order_id != order.order_id);
       }
@@ -567,6 +579,12 @@ export default function BuySell({
 
     setState({
       ...state,
+      pendingOrders,
+      closedOrders,
+      orders
+    })
+
+    await save({
       pendingOrders,
       closedOrders,
       orders
