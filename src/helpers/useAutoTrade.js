@@ -65,7 +65,7 @@ export default function useAutoTrade(config,userProfile){
   }   
 
   async function getOrder(orderId){
-    await sleep(1000);
+    await sleep(2000);
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
     if(!currOrder){
@@ -171,6 +171,7 @@ export default function useAutoTrade(config,userProfile){
                 closedOrders.push(createClosedOrder(openOrder,sellOrder));
                 orders = orders.filter(item => item.orderId != openOrder.orderId);
               }else{
+                sellOrder.buyPrice = openOrder.averagePrice;
                 pendingOrders.push(sellOrder)
               }
             }
@@ -261,12 +262,11 @@ export default function useAutoTrade(config,userProfile){
       }
     });
 
-    let currOrder;
-
     if(!res.error){
       for(let item of pendingOrders){
         if(order.orderId == item.orderId){
-          order.price = currOrder.price;
+          order.price = closePrice
+          order.buyPrice = closePrice
           break;
         }
       }
@@ -333,11 +333,14 @@ export default function useAutoTrade(config,userProfile){
       let currOrder = allOrders[pendingOrder.orderId];
 
       if(currOrder.status == 'COMPLETE'){
-        pendingOrders = pendingOrders.filter(item => item.orderId != currOrder.orderId);
+        pendingOrders = pendingOrders.filter(item => item.orderId != currOrder.order_id);
         if(currOrder.transaction_type == 'BUY'){
-          orders.push(pendingOrder);
+          orders.push(getMappedOrder(currOrder));
         }else if(currOrder.transaction_type == 'SELL'){
-          closedOrders.push(pendingOrder);
+          pendingOrder.sellPrice = currOrder.average_price;
+          pendingOrder.profit = (pendingOrder.sellPrice - pendingOrder.buyPrice)*pendingOrder.quantity;
+          pendingOrder.profitPct = (pendingOrder.sellPrice - pendingOrder.buyPrice)/pendingOrder.buyPrice *100;
+          closedOrders.push(currOrder);
         }else{
           console.error("invalid transaction type",currOrder)
         }
@@ -346,6 +349,12 @@ export default function useAutoTrade(config,userProfile){
 
     setState({
       ...state,
+      orders,
+      closedOrders,
+      pendingOrders
+    })
+
+    await save({
       orders,
       closedOrders,
       pendingOrders

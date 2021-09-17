@@ -112,7 +112,9 @@ export default function BuySell({
   },{
     name:'profit',
     selector:'profit',
-    cell:row=><Price>{row.profit}</Price>
+    cell:row=><div><Price>{row.profit}</Price><br/>
+    (<Price>{row.profitPct}</Price>)
+    </div>
   },{
     name:"Delete",
     cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'closedOrders')}><span className="icon has-text-info">
@@ -191,7 +193,7 @@ export default function BuySell({
     selector:'pnl',
     cell:(row)=>
       <div>
-        <Price>{row.profit}</Price><br/> (<Price>{row.profitPct}</Price>)
+        <Price>{(closePrice - row.buyPrice)*row.quantity}</Price><br/> (<Price>{(closePrice - row.buyPrice)/row.buyPrice*100}</Price>)
       </div>
   },{
     name:"Buy/Sell",
