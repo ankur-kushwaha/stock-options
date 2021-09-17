@@ -4,32 +4,22 @@ import Price from '../components/Price';
 import Table from '../components/Table';
 import useZerodha from '../helpers/useZerodha';
 import { getKiteClient } from '../helpers/kiteConnect';
-import { postData } from '../helpers';
 import { useRouter } from 'next/router'
 import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
 import Head from 'next/head'
 import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
-import getTicks from '../helpers/getTicks';
 import useAutoTrade from '../helpers/useAutoTrade';
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}   
 
 export default function BuySell({
   userProfile
 }) {
-  const { addToast } = useToasts()
+  // const { addToast } = useToasts()
 
   let {query} = useRouter();
   let {tradingsymbol} = query;
 
-  let {createOrder2,getHistory} = useZerodha();
-  let [history,setHistory] = React.useState([]);
 
   let defaultConfig = {
     tradingsymbol,
