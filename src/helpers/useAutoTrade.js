@@ -168,7 +168,7 @@ export default function useAutoTrade(config,userProfile){
             if(sellOrder){
               hasOrdersUpdated = true;
               if(sellOrder.status == 'COMPLETE'){
-                closedOrders.push(createClosedOrder(openOrder,sellOrder));
+                closedOrders.unshift(createClosedOrder(openOrder,sellOrder));
                 orders = orders.filter(item => item.orderId != openOrder.orderId);
               }else{
                 sellOrder.buyPrice = openOrder.averagePrice;
@@ -300,7 +300,7 @@ export default function useAutoTrade(config,userProfile){
     if(sellOrder){
       orders = orders.filter(item => item.orderId != order.orderId);
       if(sellOrder.status == 'COMPLETE'){
-        closedOrders.push(createClosedOrder(order,sellOrder));
+        closedOrders.unshift(createClosedOrder(order,sellOrder));
       }else{
         pendingOrders.push(sellOrder)
       }
@@ -330,19 +330,22 @@ export default function useAutoTrade(config,userProfile){
     },{})
 
     for(let pendingOrder of state.pendingOrders){
-      let currOrder = allOrders[pendingOrder.orderId];
+      let currKiteOrder = allOrders[pendingOrder.orderId];
 
-      if(currOrder.status == 'COMPLETE'){
-        pendingOrders = pendingOrders.filter(item => item.orderId != currOrder.order_id);
-        if(currOrder.transaction_type == 'BUY'){
-          orders.push(getMappedOrder(currOrder));
-        }else if(currOrder.transaction_type == 'SELL'){
-          pendingOrder.sellPrice = currOrder.average_price;
-          pendingOrder.profit = (pendingOrder.sellPrice - pendingOrder.buyPrice)*pendingOrder.quantity;
-          pendingOrder.profitPct = (pendingOrder.sellPrice - pendingOrder.buyPrice)/pendingOrder.buyPrice *100;
-          closedOrders.push(currOrder);
+      if(currKiteOrder.status == 'COMPLETE'){
+        pendingOrders = pendingOrders.filter(item => item.orderId != currKiteOrder.order_id);
+        if(pendingOrder.transactionType == 'BUY'){
+          orders.push(getMappedOrder(currKiteOrder));
+        }else if(pendingOrder.transactionType == 'SELL'){
+          let closedOrder = getMappedOrder(currKiteOrder);
+          closedOrder.buyPrice = pendingOrder.buyPrice;
+          closedOrder.sellPrice = currKiteOrder.average_price;
+          
+          closedOrder.profit = (closedOrder.sellPrice - closedOrder.buyPrice)*closedOrder.quantity;
+          closedOrder.profitPct = (closedOrder.sellPrice - closedOrder.buyPrice)/closedOrder.buyPrice * 100;
+          closedOrders.unshift(closedOrder);
         }else{
-          console.error("invalid transaction type",currOrder)
+          console.error("invalid transaction type",currKiteOrder)
         }
       }
     }
