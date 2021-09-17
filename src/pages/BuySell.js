@@ -12,6 +12,7 @@ import Head from 'next/head'
 import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
 import getTicks from '../helpers/getTicks';
+import useAutoTrade from '../helpers/useAutoTrade';
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -40,23 +41,22 @@ export default function BuySell({
     interval:userProfile.configs?.interval||'ONE_MINUTE'
   }
   const [config,setConfig] = React.useState(defaultConfig);
-  
-  let [state,setState] = React.useState({
-    hasOrdersUpdated:0,
-    currTrend:"",
-    profit:0,
-    profitArr:[],
-    tradeCount:0,
-    orders: userProfile.orders?.filter(item=>item.tradingsymbol == tradingsymbol),
-    closedOrders: userProfile.closedOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
-    closePrice:0,
-    pendingOrders:userProfile.pendingOrders?.filter(item=>item.tradingsymbol == tradingsymbol)||[],
-  });
+  const {orders, pendingOrders,closedOrders,
+    closePrice,
+    startAutoTrade,deleteOrder,
+    updateOrder,
+    importOpenOrders,
+    save,
+    triggerOrderNow,
+    sellOrder,
+    refreshPendingOrders,
+    stopAutoTrade} = useAutoTrade(config,userProfile);
 
-  let [closePrice,setClosePrice] = React.useState(0);
+
+
 
   React.useEffect(()=>{
-    log(userProfile);
+    console.log(userProfile);
 
     fetch('/api/getQuote?instruments=NFO:'+tradingsymbol).then(res=>res.json()).then(res=>{
       let quote = res.quotes['NFO:'+tradingsymbol];
@@ -64,270 +64,28 @@ export default function BuySell({
         console.log('Quote not available for ', tradingsymbol)
         return;
       }
-      setState({
-        ...state,
-        closePrice:quote.depth.buy[0].price||quote.last_price
-      })
+      
 
       setConfig({
         ...config,
         instrumentToken:quote.instrument_token
       })
 
-      getTicks([quote.instrument_token],(ticks)=>{
-        let closePrice = (ticks[quote.instrument_token].depth.buy[0].price+ticks[quote.instrument_token].depth.sell[0].price)/2;
-        setClosePrice(Number(closePrice.toFixed(1)));
-      });
     });
     
   },[])
 
-  React.useEffect(()=>{
-    setState({
-      ...state,
-      closePrice
-    })
-  },[closePrice])
-
   // Trigger trading
   React.useEffect(()=>{ 
 
-    async function fetchHistory(){
-
-      let res = await getHistory(tradingsymbol,{
-        interval:config.interval
-      });
-
-      if(config.shouldRun){
-        setHistory(res.history);
-      }
-    }
-
-    let interval;
     if(config.shouldRun){
-      interval = setInterval(fetchHistory,30000);
-      fetchHistory();
-    }
-    return ()=>{
-      clearInterval(interval);
+      startAutoTrade()
+    }else{
+      stopAutoTrade()
     }
       
   },[config.shouldRun])
 
-  async function triggerBuyOrder(){
-    let orderId = await createOrder2({
-      transactionType:"BUY",
-      tradingsymbol,
-      quantity:config.quantity,
-      price: config.marketOrder?'MARKET':state.closePrice
-    });
-    
-    await sleep(1000);
-
-    if(orderId == null){
-      log("Create order failed");
-      return ;
-    }
-
-
-    let allOrders = await fetch('/api/getOrders').then(res=>res.json())
-    let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-    if(!currOrder){
-      log('Invalid OrderID');
-      return;
-    }
-    return currOrder;
-    
-  }
-
-  async function triggerSellOrder(order){
-    log('Triggering Sell order for', order);
-
-    let orderId = await createOrder2({  
-      transactionType : "SELL",
-      tradingsymbol,
-      quantity : order.quantity,
-      price : config.marketOrder ? 'MARKET' : state.closePrice
-    });
-
-    await sleep(1000);
-
-    let allOrders = await fetch('/api/getOrders').then(res=>res.json())
-    let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-
-    if(!currOrder ){
-      log("Sell Order failed");
-      return;
-    }
-
-
-    order.buyPrice = order.average_price;
-    order.sellPrice = currOrder.average_price||currOrder.price;
-    order.profit = ( order.sellPrice - order.buyPrice ) * order.quantity;
-    order.closingOrder = currOrder;
-
-    return order;
-
-  }
-
-  // Buy/Sell
-  React.useEffect(async ()=>{
-    
-    
-    if(history.length == 0){
-      return ;
-    }
-
-    let item = history[history.length-1];
-    log('history updated, last quote: ',item.actual.close ,item.timestamp,item);
-
-    let {tradeCount,profit} = state;
-    let profitArr = [...state.profitArr];
-    let orders = [...state.orders];
-    
-    let closedOrders = [...state.closedOrders];
-    let pendingOrders = [...state.pendingOrders];
-
-    let newTrend = item.signal=='GREEN'?"UP":"DOWN";
-    
-    let trendReverse = false;
-    if(state.currTrend && (state.currTrend != newTrend)){
-      trendReverse = true;
-    }else{
-      log("Trend continuing... ", newTrend);
-    }
-
-    let hasOrdersUpdated = state.hasOrdersUpdated;
-    
-
-    if(trendReverse){
-      if(newTrend == 'DOWN'){
-        log('Trend reversed and moving downwards',item);
-        //sell signal
-        //sell all whose price is less than buy price;
-
-        if(config.isBullish){
-
-          log("Bullish flag is enabled, checking open orders ", orders);
-        
-          let executedOrders = [];
-          for(let order of orders){
-            let buyPrice = order.average_price||order.price;
-            if((state.closePrice - buyPrice) > ((config.minTarget * buyPrice)/100)){
-              let closedOrder = await triggerSellOrder(order,item);
-              if( closedOrder && closedOrder.status != 'COMPLETE'){
-                pendingOrders.push(closedOrder);
-              }else if(closedOrder){
-                executedOrders.push(closedOrder.order_id);
-              }
-              hasOrdersUpdated++;
-            }else{
-              log(`Sell order blocked, Min Change: ${(config.minTarget * buyPrice)/100}, Current Chg: ${state.closePrice - buyPrice}, BuyPrice: ${buyPrice}, LTP: ${state.closePrice}, MinTarget: ${config.minTarget}`);
-            }
-          }
-          //Remove executed orders
-          closedOrders = closedOrders.concat(orders.filter(item=>executedOrders.includes(item.order_id)))
-          orders = orders.filter(item=>!executedOrders.includes(item.order_id));
-        }
-
-      }
-
-      if( newTrend == 'UP' ){
-      //Buy signal
-        log('Trend reversed and moving upwards',item);
-
-        if(config.isBullish){
-        
-          log("Bullish flag is enabled, checking open orders and maxOrders ", orders);
-        
-          if((orders.length + pendingOrders.length) < config.maxOrder){
-            log('Triggerring BUY order....');
-
-            let newBuyOrder = await triggerBuyOrder(item);
-
-            if(newBuyOrder && newBuyOrder.status != 'COMPLETE'){
-              pendingOrders.push(newBuyOrder);
-            }else if(newBuyOrder){
-              orders.push(newBuyOrder);
-            }
-            hasOrdersUpdated++;
-
-          }else{
-            log("BUY orders limit reached",orders);
-          }
-        }
-      } 
-    }
-
-    if(state.hasOrdersUpdated != hasOrdersUpdated){
-      await save({
-        orders,
-        closedOrders,
-        pendingOrders
-      })
-    }
-    
-
-    setState({
-      ...state,
-      pendingOrders,
-      hasOrdersUpdated,
-      currTrend:newTrend,
-      tradeCount,
-      trendReverse,
-      profit,
-      closedOrders,
-      orders,
-      profitArr
-    });
-
-  },[history.length])
-
-  React.useEffect(async ()=>{
-    if(history.length>0 && state.pendingOrders.length>0){
-      await refreshPendingOrders()
-    }
-  },[history.length]);
-
-  async function createOrder(item,{
-    transactionType,
-    quantity
-  }={}){
-    
-    let orderId = await createOrder2({  
-      transactionType : transactionType||"SELL",
-      tradingsymbol,
-      quantity : quantity || config.quantity,
-      price : config.marketOrder ? 'MARKET' : state.closePrice
-    });
-
-    await sleep(1000);
-
-    let allOrders = await fetch('/api/getOrders').then(res=>res.json())
-    let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
-    
-    return currOrder;
-  }
-
-  async function save({
-    newConfig,
-    orders,
-    closedOrders
-  }={}){
-    addToast('Saving...');
-    let data = {
-      userId:userProfile.user_id,
-      tradingsymbol,
-      session:{
-        configs:newConfig||config,
-        orders:orders||state.orders,
-        closedOrders:closedOrders||state.closedOrders
-      }
-    };
-    log('Saving user',data);
-    await postData('/api/updateUser',data);
-    
-  }
 
   async function handleUpdate(config){
     setConfig(config);
@@ -340,7 +98,7 @@ export default function BuySell({
     grow:1
   },{
     name:'order_id',
-    selector:'order_id',
+    selector:'orderId',
     grow:1
   },{
     name:'quantity',
@@ -357,7 +115,7 @@ export default function BuySell({
     cell:row=><Price>{row.profit}</Price>
   },{
     name:"Delete",
-    cell:row=><button className="button is-small" onClick={deletePosition(row,'closedOrders')}><span className="icon has-text-info">
+    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'closedOrders')}><span className="icon has-text-info">
       <i className="fas fa-times-circle"></i>
     </span></button>
   }]
@@ -369,11 +127,13 @@ export default function BuySell({
     <span className="is-size-7">
       Timestamp:{data.order_timestamp}
     </span>
+    <br />
+    <pre>{JSON.stringify(data)}</pre>
   </div>;
 
   let pendingOrderColumns = [{
     name:'Timestamp',
-    selector:'order_timestamp',
+    selector:'timestamp',
     grow:2,
     wrap:false
   },{
@@ -383,16 +143,29 @@ export default function BuySell({
     name:'Status',
     selector:'status'
   },{
+    name:'Transaction',
+    selector:'transactionType'
+  },{
     name:'Buy Price',
-    selector:'average_price',
-    cell:row=><>{row.price}</>
+    selector:'buyPrice',
+    cell:row=><>{row.buyPrice}</>
+  },{
+    name:'LTP',
+    selector:'LTP',
+    cell:row=><>{closePrice}</>
   },{
     name:"Delete",
-    cell:row=><button className="button is-small" onClick={deletePosition(row,'pendingOrders')}>
+    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'pendingOrders')}>
       <span className="icon has-text-info">
         <i className="fas fa-times-circle"></i>
       </span></button>
+  },{
+    name:"Update Price",
+    cell:row=><button className="button is-small" onClick={()=>updateOrder(row,'pendingOrders')}>
+     Update</button>
   }]
+
+  
 
   let orderColumns=[{
     name:'TradingSymbol',
@@ -408,12 +181,11 @@ export default function BuySell({
     selector:'status'
   },{
     name:'Buy Price',
-    selector:'average_price',
-    cell:row=><>{row.average_price||row.price}</>
+    selector:'buyPrice',
   },{
     name:'LTP',
     selector:'price',
-    cell:()=><>{state.closePrice}</>
+    cell:()=><>{closePrice}</>
   },{
     name:'PnL',
     selector:'pnl',
@@ -423,194 +195,26 @@ export default function BuySell({
       </div>
   },{
     name:"Buy/Sell",
-    cell:row=><button className="button is-small" onClick={closePosition(row)}>Sell</button>
+    cell:row=><button className="button is-small" onClick={()=>sellOrder(row)}>Sell</button>
   },{
     name:"Delete",
-    cell:row=><button className="button is-small" onClick={deletePosition(row,'orders')}>
+    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'orders')}>
       <span className="icon has-text-info">
         <i className="fas fa-times-circle"></i>
       </span></button>
   }];
 
-  const deletePosition = (order,type='orders')=>async ()=>{
-    let orders = [...state[type]];
-    orders = orders.filter(item=>item.order_id != order.order_id);
-    await save({
-      [type]:orders
-    });
-    setState({
-      ...state,
-      [type]:orders,
-      hasOrdersUpdated:++state.hasOrdersUpdated
-    })
-  }
-
-  const closePosition = (order)=>async ()=>{
-    let orders = [...state.orders];
-    let closedOrders = [...state.closedOrders];
-
-    if(order.order_id){
-      orders = orders.filter(item=>item.order_id != order.order_id);
-    }else{
-      orders = orders.filter(item=>item.order_id);
-    }
-
-    setState({
-      ...state,
-      orders
-    })
-
-    let currOrder = await createOrder({
-      actual:{
-        close:state.closePrice
-      }
-    },{
-      transactionType:'SELL',
-      quantity:order.quantity
-    })
-
-    let pendingOrders = [...state.pendingOrders];
-    
-    if(currOrder && currOrder.status != 'COMPLETE'){
-      pendingOrders.push(currOrder);
-    } else if(currOrder) {
-
-      let sellPrice,buyPrice;
-      
-      buyPrice = order.average_price;
-      sellPrice = currOrder.average_price || currOrder.price;
-      
-      order.sellPrice = sellPrice;
-      order.buyPrice = order.average_price;
-      order.profit = (sellPrice - buyPrice) * order.quantity;
-      order.profitPct = (sellPrice - buyPrice)/buyPrice*100;
-  
-      closedOrders.unshift(order);
-
-    } else {
-      log('Sell order failed ',order);
-    }
-
-    setState({
-      ...state,
-      orders,
-      pendingOrders,
-      closedOrders
-    })
-
-    await save({
-      orders,
-      pendingOrders,
-      closedOrders
-    });
-  }
-
-  function log(...args){
-    let logStr = JSON.stringify(args);
-
-    if(logStr.length<100){
-      addToast(logStr);
-    }
-    
-    console.log(args);
-  }
-
-  async function triggerNow(){
-    let buyOrder = await triggerBuyOrder({
-      actual:{
-        close:state.closePrice
-      }
-    })
-
-
-    if(buyOrder && buyOrder.status == 'COMPLETE'){
-      let orders = [...state.orders];
-      orders.push(buyOrder);
-  
-      setState({
-        ...state,
-        orders,
-        hasOrdersUpdated:++state.hasOrdersUpdated
-      })
-    }else if(buyOrder){
-      let pendingOrders = [...state.pendingOrders];
-      pendingOrders.push(buyOrder);
-  
-      setState({
-        ...state,
-        pendingOrders,
-        hasOrdersUpdated:++state.hasOrdersUpdated
-      })
-    }
-
-    
-  }
 
   let totalProfit = 0;
 
-  let orders = state.orders.map(order=>{
-    let buyPrice = (order.average_price||order.price)
-    order.profit = (state.closePrice - buyPrice) * order.quantity;
-    totalProfit += order.profit;
-    order.profitPct = (state.closePrice - buyPrice) * 100/buyPrice;
-    return order;
-  });
 
 
-  async function refreshPendingOrders(pendingOrders){
-    log('refreshing pending orders....');
-    let response = await fetch('api/getOrders').then(res=>res.json())
-    pendingOrders = pendingOrders||[...state.pendingOrders]
-    let pendingOrdersId = pendingOrders.map(item=>item.order_id);
-
-    let orders = [...state.orders];
-    let closedOrders = [...state.closedOrders];
-
-    for(let order of response){
-      if(order.status =='COMPLETE' && pendingOrdersId.includes(order.order_id)){
-        if(order.transaction_type == 'BUY'){
-          orders.push(order);
-        }else{
-          closedOrders.unshift(order);
-        }
-        pendingOrders = pendingOrders.filter(item=>item.order_id != order.order_id);
-      }
-    }
-
-    setState({
-      ...state,
-      pendingOrders,
-      closedOrders,
-      orders
-    })
-
-    await save({
-      pendingOrders,
-      closedOrders,
-      orders
-    })
-
-  }
 
 
-  async function importOrders(){
-    let orders = await fetch('/api/positions').then(res=>res.json());
-    orders = orders.positions.net.filter(order=>{
-      return order.tradingsymbol==tradingsymbol && order.quantity>0
-    });
-
-    setState({
-      ...state,
-      orders
-    })
-    
-    await save({
-      orders
-    })
-  }
 
   return (
     <div >
+
       <Head>
         <title>
           {`${totalProfit.toFixed(2)} | ${tradingsymbol} | ${(config.shouldRun?'Running... ':'Stopped')}`}
@@ -625,21 +229,21 @@ export default function BuySell({
 
           <div className="column is-3">
             
-            <BuySellConfig importStock = {importOrders}config={config} triggerNow={triggerNow} onUpdate={handleUpdate}></BuySellConfig>
+            <BuySellConfig importStock = {importOpenOrders} config={config} triggerNow={()=>triggerOrderNow()} onUpdate={handleUpdate}></BuySellConfig>
              
           </div>
 
 
 
           <div className="column">
-            {state.pendingOrders.length>0 && <>
+            {pendingOrders.length>0 && <>
               <button className="button is-small" onClick={()=>refreshPendingOrders()}>
                 Refersh Pending Orders
               </button>
               <Table 
                 title={"Pending Orders"} 
                 columns={pendingOrderColumns} 
-                data={state.pendingOrders}
+                data={pendingOrders}
                 expandableRows={true}
                 ExpandedComponent={<BaseExpandedComponent/>}
               ></Table>
@@ -651,8 +255,8 @@ export default function BuySell({
               expandableRows={true}
               ExpandedComponent={<BaseExpandedComponent/>}
             ></Table>
-            {state.closedOrders.length>0 &&
-            <Table title={"Closed Orders"} columns={closedOrderColumns} data={state.closedOrders}></Table>
+            {closedOrders.length>0 &&
+            <Table title={"Closed Orders"} columns={closedOrderColumns} data={closedOrders}></Table>
             }
           </div>
         </div>
@@ -686,6 +290,7 @@ export async function getServerSideProps(ctx) {
 
   userProfile.configs = session?.data.configs||dbUser.configs||{};
   userProfile.orders = session?.data.orders||[]
+  userProfile.pendingOrders = session?.data.pendingOrders||[]
   userProfile.closedOrders = session?.data.closedOrders||[];
   
 
