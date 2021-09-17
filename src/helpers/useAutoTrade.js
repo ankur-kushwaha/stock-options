@@ -47,10 +47,6 @@ export default function useAutoTrade(config,userProfile){
       orderId:currOrder.order_id,
       timestamp:currOrder.order_timestamp,
       tradingsymbol:currOrder.tradingsymbol,
-      price:currOrder.price,
-      buyPrice:currOrder.average_price,
-      profit: (closePrice - currOrder.average_price) * currOrder.quantity,
-      profitPct: (closePrice - currOrder.average_price)/currOrder.average_price*100,
       averagePrice : currOrder.average_price,
       quantity : currOrder.quantity,
       status:currOrder.status,
@@ -73,7 +69,7 @@ export default function useAutoTrade(config,userProfile){
       return;
     }
 
-    return getMappedOrder(currOrder);
+    return currOrder;
   }
 
   async function createOrder({
@@ -100,15 +96,13 @@ export default function useAutoTrade(config,userProfile){
       return ;
     }
 
-    let buyOrder = await getOrder(orderId);
-    if(!buyOrder){
+    let currKiteOrder = await getOrder(orderId);
+    if(!currKiteOrder){
       console.log('order failed....');
       return;
     }
 
-    // buyOrder.status = 'COMPLETE'
-
-    return buyOrder;
+    return getMappedOrder(currKiteOrder);
   }
 
   React.useEffect(()=>{
@@ -144,8 +138,10 @@ export default function useAutoTrade(config,userProfile){
           if(buyOrder){
             hasOrdersUpdated = true;
             if(buyOrder.status == 'COMPLETE'){
+              buyOrder.buyPrice = buyOrder.averagePrice;
               orders.push(buyOrder);
             }else{
+              buyOrder.buyPrice = closePrice;
               pendingOrders.push(buyOrder);
             }
           }
@@ -252,7 +248,6 @@ export default function useAutoTrade(config,userProfile){
   }
 
   async function updateOrder(order,type){
-    order.price = closePrice;
     let pendingOrders = [...state.pendingOrders];
     let res = await postData('/api/modifyOrder',{
       variety:"regular",
@@ -302,6 +297,7 @@ export default function useAutoTrade(config,userProfile){
       if(sellOrder.status == 'COMPLETE'){
         closedOrders.unshift(createClosedOrder(order,sellOrder));
       }else{
+        sellOrder.buyPrice = order.averagePrice;
         pendingOrders.push(sellOrder)
       }
       setState({
@@ -333,13 +329,15 @@ export default function useAutoTrade(config,userProfile){
       let currKiteOrder = allOrders[pendingOrder.orderId];
 
       if(currKiteOrder.status == 'COMPLETE'){
-        pendingOrders = pendingOrders.filter(item => item.orderId != currKiteOrder.order_id);
+        pendingOrders = pendingOrders.filter(item => item.orderId != pendingOrder.orderId);
         if(pendingOrder.transactionType == 'BUY'){
+          
           orders.push(getMappedOrder(currKiteOrder));
         }else if(pendingOrder.transactionType == 'SELL'){
+          
           let closedOrder = getMappedOrder(currKiteOrder);
           closedOrder.buyPrice = pendingOrder.buyPrice;
-          closedOrder.sellPrice = currKiteOrder.average_price;
+          closedOrder.sellPrice = closedOrder.averagePrice;
           
           closedOrder.profit = (closedOrder.sellPrice - closedOrder.buyPrice)*closedOrder.quantity;
           closedOrder.profitPct = (closedOrder.sellPrice - closedOrder.buyPrice)/closedOrder.buyPrice * 100;
