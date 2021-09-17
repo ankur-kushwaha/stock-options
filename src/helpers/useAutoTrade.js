@@ -58,8 +58,14 @@ export default function useAutoTrade(config,userProfile){
     }
   }
 
-  async function getOrder(orderId){
+  function sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }   
 
+  async function getOrder(orderId){
+    await sleep(1000);
     let allOrders = await fetch('/api/getOrders').then(res=>res.json())
     let currOrder = allOrders.filter(item=>orderId == item.order_id)[0];
     if(!currOrder){
@@ -328,9 +334,9 @@ export default function useAutoTrade(config,userProfile){
 
       if(currOrder.status == 'COMPLETE'){
         pendingOrders = pendingOrders.filter(item => item.orderId != currOrder.orderId);
-        if(currOrder.transactionType == 'BUY'){
+        if(currOrder.transaction_type == 'BUY'){
           orders.push(pendingOrder);
-        }else if(currOrder.transactionType == 'SELL'){
+        }else if(currOrder.transaction_type == 'SELL'){
           closedOrders.push(pendingOrder);
         }else{
           console.error("invalid transaction type",currOrder)
