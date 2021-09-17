@@ -167,9 +167,9 @@ export default function useAutoTrade(config,userProfile){
             });
             if(sellOrder){
               hasOrdersUpdated = true;
+              orders = orders.filter(item => item.orderId != openOrder.orderId);
               if(sellOrder.status == 'COMPLETE'){
                 closedOrders.unshift(createClosedOrder(openOrder,sellOrder));
-                orders = orders.filter(item => item.orderId != openOrder.orderId);
               }else{
                 sellOrder.buyPrice = openOrder.averagePrice;
                 pendingOrders.push(sellOrder)
