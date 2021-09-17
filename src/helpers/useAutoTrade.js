@@ -111,7 +111,7 @@ export default function useAutoTrade(config,userProfile){
         let tick =ticks[config.instrumentToken];
 
         let closePrice = (tick.depth.buy[0].price+tick.depth.sell[0].price)/2 || tick.last_price;
-        console.log('closePrice',closePrice);
+        // console.log('closePrice',closePrice);
         setClosePrice(Number(closePrice.toFixed(1)));
       });
     }
