@@ -33,8 +33,8 @@ export default function BuySell({
 
   let defaultConfig = {
     tradingsymbol,
-    maxOrder: userProfile.configs?.maxOrder || 3,
-    minTarget:  userProfile.configs?.minTarget || 10,
+    maxOrder: userProfile.configs?.maxOrder || 5,
+    minTarget:  userProfile.configs?.minTarget || 5,
     quantity : userProfile.configs?.quantity || 100,
     isBullish: !!userProfile.configs?.isBullish,
     marketOrder: !!userProfile.configs?.marketOrder,

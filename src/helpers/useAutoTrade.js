@@ -28,7 +28,7 @@ export default function useAutoTrade(config,userProfile){
 
   function startAutoTrade(){
     console.log('starting autotrade...')
-    let intervalId = setInterval(fetchHistory,10000);
+    let intervalId = setInterval(fetchHistory,30000);
     fetchHistory();
     setState({
       ...state,
