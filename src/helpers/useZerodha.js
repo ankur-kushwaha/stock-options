@@ -56,6 +56,10 @@ export default function useZerodha(){
       return res.data?.order_id;
     }else{
       let res = await fetch(url).then(res=>res.json());
+      if(res.error){
+        alert(res.error.message);
+        return ;
+      }
       return res.data.order_id;
     }
 

@@ -94,6 +94,9 @@ export default function BuySell({
     name:'quantity',
     selector:'quantity'
   },{
+    name:'status',
+    selector:'status'
+  },{
     name:'buyPrice',
     selector:'buyPrice'
   },{
@@ -124,16 +127,11 @@ export default function BuySell({
   </div>;
 
   let pendingOrderColumns = [{
-    name:'Timestamp',
-    selector:'timestamp',
-    grow:2,
-    wrap:false
+    name:'Status',
+    selector:'status'
   },{
     name:'Quantity',
     selector:'quantity'
-  },{
-    name:'Status',
-    selector:'status'
   },{
     name:'Transaction',
     selector:'transactionType'

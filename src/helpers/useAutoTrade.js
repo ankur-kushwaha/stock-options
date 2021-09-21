@@ -49,8 +49,9 @@ export default function useAutoTrade(config,userProfile){
       tradingsymbol:currOrder.tradingsymbol,
       averagePrice : currOrder.average_price,
       quantity : currOrder.quantity,
-      status:currOrder.status,
-      transactionType:currOrder.transaction_type
+      status:currOrder.status||'COMPLETE',
+      transactionType:currOrder.transaction_type,
+      buyPrice:currOrder.price||currOrder.average_price,
     }
   }
 
@@ -138,9 +139,11 @@ export default function useAutoTrade(config,userProfile){
           if(buyOrder){
             hasOrdersUpdated = true;
             if(buyOrder.status == 'COMPLETE'){
+              buyOrder.status = 'AUTOBUY_COMPLETE'
               buyOrder.buyPrice = buyOrder.averagePrice;
               orders.push(buyOrder);
             }else{
+              buyOrder.status = 'AUTOBUY_PENDING'
               buyOrder.buyPrice = closePrice;
               pendingOrders.push(buyOrder);
             }
@@ -165,9 +168,12 @@ export default function useAutoTrade(config,userProfile){
               hasOrdersUpdated = true;
               orders = orders.filter(item => item.orderId != openOrder.orderId);
               if(sellOrder.status == 'COMPLETE'){
-                closedOrders.unshift(createClosedOrder(openOrder,sellOrder));
+                let soldOrder = createClosedOrder(openOrder,sellOrder)
+                soldOrder.status = 'AUTOSELL_COMPLETE'
+                closedOrders.unshift(soldOrder);
               }else{
                 sellOrder.buyPrice = openOrder.averagePrice;
+                sellOrder.status = 'AUTOSELL_PENDING'
                 pendingOrders.push(sellOrder)
               }
             }
@@ -272,7 +278,9 @@ export default function useAutoTrade(config,userProfile){
       })
 
     }else{
-      console.log(res);
+      alert(res.error.message);
+      console.error(res);
+      return;
     }
   }
 
@@ -295,8 +303,11 @@ export default function useAutoTrade(config,userProfile){
     if(sellOrder){
       orders = orders.filter(item => item.orderId != order.orderId);
       if(sellOrder.status == 'COMPLETE'){
-        closedOrders.unshift(createClosedOrder(order,sellOrder));
+        let soldOrder = createClosedOrder(order,sellOrder)
+        soldOrder.status = 'SELL_COMPLETE'
+        closedOrders.unshift(soldOrder);
       }else{
+        sellOrder.status = 'SELL_PENDING'
         sellOrder.buyPrice = order.averagePrice;
         pendingOrders.push(sellOrder)
       }
@@ -327,12 +338,17 @@ export default function useAutoTrade(config,userProfile){
 
     for(let pendingOrder of state.pendingOrders){
       let currKiteOrder = allOrders[pendingOrder.orderId];
+      if(!currKiteOrder){
+        console.error('Pending order doesnot exits on All Orders', pendingOrder,allOrders);
+        continue;
+      }
 
-      if(currKiteOrder.status == 'COMPLETE'){
+      if(currKiteOrder.status == 'COMPLETE'){ 
         pendingOrders = pendingOrders.filter(item => item.orderId != pendingOrder.orderId);
         if(pendingOrder.transactionType == 'BUY'){
-          
-          orders.push(getMappedOrder(currKiteOrder));
+          let buyOrder = getMappedOrder(currKiteOrder)
+          buyOrder.status = "BUY_COMPLETE"
+          orders.push(buyOrder);
         }else if(pendingOrder.transactionType == 'SELL'){
           
           let closedOrder = getMappedOrder(currKiteOrder);
@@ -341,6 +357,7 @@ export default function useAutoTrade(config,userProfile){
           
           closedOrder.profit = (closedOrder.sellPrice - closedOrder.buyPrice)*closedOrder.quantity;
           closedOrder.profitPct = (closedOrder.sellPrice - closedOrder.buyPrice)/closedOrder.buyPrice * 100;
+          closedOrder.status = 'SELL_COMPLETE'
           closedOrders.unshift(closedOrder);
         }else{
           console.error("invalid transaction type",currKiteOrder)
@@ -369,7 +386,16 @@ export default function useAutoTrade(config,userProfile){
     })[0];
 
     let orders = [...state.orders];
-    orders.push(getMappedOrder(openOrder));
+
+    let positionOrder =  orders.filter(item=>!item.order_id);
+    if(positionOrder && openOrder){
+      orders = orders.filter(item=>item.order_id);
+      orders.push(getMappedOrder(openOrder));
+    } else if(openOrder){
+      
+      orders.push(getMappedOrder(openOrder));
+      
+    }
 
     setState({
       ...state,
@@ -379,6 +405,7 @@ export default function useAutoTrade(config,userProfile){
     await save({
       orders
     });
+    
   }
 
   async function triggerOrderNow(){
@@ -391,8 +418,10 @@ export default function useAutoTrade(config,userProfile){
     if(buyOrder){
       
       if(buyOrder.status == 'COMPLETE'){
+        buyOrder.status = 'BUY_COMPLETE'
         orders.push(buyOrder);
       }else{
+        buyOrder.status = 'BUY_PENDING'
         pendingOrders.push(buyOrder);
       }
     }

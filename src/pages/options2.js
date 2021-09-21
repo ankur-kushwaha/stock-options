@@ -35,6 +35,7 @@ export default function options2({stockOptions,stockQuotes,profile,stocks}) {
   const {createOrder} = useZerodha();
   
   React.useEffect(()=>{
+    console.log(stockOptions,stockQuotes,profile,stocks)
     let stockInstruments = Object.values(stockQuotes).map(item=>item.instrument_token);
     let instruments = [...Object.keys(stockOptions),...stockInstruments]
     getTicks(instruments,(ticks)=>{
