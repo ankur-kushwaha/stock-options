@@ -49,7 +49,7 @@ export default function Header({ userProfile={},tab}) {
         Position
               </a>
 
-              <a className={"navbar-item is-size-7 "+(tab=='/SingleOption'?'is-active':"")} href="/SingleOption?tradingsymbol=NIFTY&range=10">
+              <a className={"navbar-item is-size-7 "+(tab=='/singleOption'?'is-active':"")} href="/singleOption?tradingsymbol=NIFTY&range=10">
         Smart Options
               </a>
               <a className={"navbar-item is-size-7 "} href="/holdings" rel="noreferrer">
