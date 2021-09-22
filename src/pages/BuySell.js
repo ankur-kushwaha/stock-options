@@ -26,7 +26,7 @@ export default function BuySell({
     maxOrder: userProfile.configs?.maxOrder || 5,
     minTarget:  userProfile.configs?.minTarget || 5,
     quantity : userProfile.configs?.quantity || 100,
-    isBullish: !!userProfile.configs?.isBullish,
+    isBullish: (userProfile.configs?.isBullish == undefined)?true:!!userProfile.configs?.isBullish,
     marketOrder: !!userProfile.configs?.marketOrder,
     interval:userProfile.configs?.interval||'ONE_MINUTE'
   }

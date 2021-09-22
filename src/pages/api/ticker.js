@@ -8,10 +8,16 @@ const ioHandler = (req, res) => {
     const io = new Server(res.socket.server)
 
     io.on('connection', socket => {
+      let ticker;
+      socket.on('disconnect',()=>{
+        if(ticker){
+          ticker.disconnect();
+        }
+      });
 
       socket.on('init',async data=>{
         let tokens = data.instrumentTokens;
-        let ticker = await getKiteTickerClient(socket.handshake.headers.cookie);
+        ticker = await getKiteTickerClient(socket.handshake.headers.cookie);
         
         ticker.connect();
         
@@ -39,8 +45,9 @@ const ioHandler = (req, res) => {
         ticker.on("error", function onTicks(data) {
           socket.emit('error',{
             data:data.toString()
-          }) 
+          })
         })
+
       })
     })
 

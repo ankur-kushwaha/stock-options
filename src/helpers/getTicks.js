@@ -1,7 +1,10 @@
 
 import io from 'socket.io-client'
-export default function useTicker(instrumentTokens,callback){
-  
+import { throttle } from 'throttle-debounce';
+
+
+export default function getTicks(instrumentTokens,callback){
+  let throttledCallback = throttle(500, false,callback);
 
   let ticks = {};
   fetch('/api/ticker').finally(() => {
@@ -29,7 +32,8 @@ export default function useTicker(instrumentTokens,callback){
         ...newTicks
       }
 
-      callback(ticks)
+      // callback(ticks)
+      throttledCallback(ticks);
 
     })
       

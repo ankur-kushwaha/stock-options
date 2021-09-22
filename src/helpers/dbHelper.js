@@ -18,10 +18,14 @@ async function fetchOptions({
         return item
       } 
     })
-    query = { name: {$in:tradingsymbol}, expiry: expiry, instrument_type: instrumentType }
+    query = { name: {$in:tradingsymbol}, instrument_type: instrumentType }
   }else{
     tradingsymbol = tradingsymbol.split(" ")[0];
-    query = { name: tradingsymbol, expiry: expiry, instrument_type: instrumentType }
+    query = { name: tradingsymbol, instrument_type: instrumentType }
+  }
+
+  if(expiry){
+    query.expiry = expiry;
   }
 
   console.log(query);

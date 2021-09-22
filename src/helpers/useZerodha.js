@@ -2,7 +2,7 @@ import { useToasts } from 'react-toast-notifications'
 const dev = false;//process.env.NODE_ENV !== 'production';
 
 export default function useZerodha(){
-  const { addToast } = useToasts()
+  // const { addToast } = useToasts()
   const createOrder = ({
     transactionType,tradingsymbol,quantity,price
   }) => () => {
@@ -51,7 +51,7 @@ export default function useZerodha(){
       let res = await fetch(url).then(res=>res.json());
       if(res.error?.message){
         console.log(res);
-        addToast(res.error?.message)
+        // addToast(res.error?.message)
       }
       return res.data?.order_id;
     }else{
