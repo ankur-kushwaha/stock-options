@@ -19,15 +19,26 @@ function sleep(ms) {
 }   
 
 async function getDayHistory(tradingsymbol,options={}){
-  let {daysAgo=0,interval="ONE_MINUTE"} = options;
+  let {
+    daysAgo=0,
+    interval="ONE_MINUTE",
+    range=1,
+    defaultExchange='NSE'
+  } = options;
+
   await smart_api.generateSession("A631449", "Kushwaha1@")
   let today  = new Date();
 
   let toDate = date.addDays(today,-daysAgo)
-  const fromDate = date.addDays(today,-daysAgo-1)
+  let fromDate = date.addDays(today,-daysAgo-1)
+  if(range>1){
+    fromDate = date.addDays(today,-range)
+  }
+  
 
-  let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol});
+  let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol,'exchange':defaultExchange});
   let token = zerodhaInstrument.toObject().exchange_token;
+  let instrumentToken =  zerodhaInstrument.toObject().instrument_token;
   let exchange = zerodhaInstrument.toObject().exchange;
 
   let doc = (await AngelInstrument.findOne({'token':token})).toObject();
@@ -43,8 +54,10 @@ async function getDayHistory(tradingsymbol,options={}){
   let data = response.data;
   if(data == null){
     console.log('res',response)
-    console.log(params);
-    throw new Error('No history response from server');
+    console.log(tradingsymbol,params,response,options);
+    throw new Error('No history response from server',{
+      
+    });
     // data=[]
   }
   
@@ -61,6 +74,7 @@ async function getDayHistory(tradingsymbol,options={}){
     let close = Number(((item[1]+item[2]+item[3]+item[4])/4).toFixed(2));
 
     history.push({
+      instrumentToken,
       actual:{
         close:item[4],
         open:item[1]

@@ -2,29 +2,28 @@ const mongoose =require( 'mongoose');
 var Schema = mongoose.Schema;
 
 var instrumentHistory = new Schema({
-  "name": {
+  lastChange:{
+    "type": "Number"
+  },
+  lastReverse:{
+    "type": "Number"
+  },
+  "date": {
     "type": "String"
   },
-  "token": {
+  "stock": {
     "type": "String"
   },
-  "change": {
+  "signal": {
     "type": "String"
   },
-  "trend": {
+  "day5Change": {
     "type": "String"
   },
-  "trendCount": {
+  "day10Change": {
     "type": "String"
-  },
-  "timestamp": {
-    "type": "Date"
-  },
-  "history": {
-    "type": [
-      "Mixed"
-    ]
   }
+  
 });
 
 mongoose.models = {};
