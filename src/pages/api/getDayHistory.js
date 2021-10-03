@@ -6,7 +6,8 @@ export default async function handler(req, res) {
 
   let history = await getDayHistory(tradingsymbol,{
     daysAgo,
-    interval
+    interval:"THREE_MINUTE",
+    defaultExchange:'NFO'
   });
   
 
@@ -19,11 +20,35 @@ export default async function handler(req, res) {
   let maxOrder = Number(req.query.maxOrder)||10;
   let quantity = Number(req.query.quantity)||100;
   let minChange = Number(req.query.minChange)||10;
-
+  let stoploss = minChange/2;
+  let checkStopLoss = true;
   let trySelling = false;
 
   for(let item of history){
     let currTrend = item.signal == 'GREEN'?"UP":"DOWN";
+
+    if(currTrend == 'DOWN'){
+      let remainingOrders = [];
+      if(checkStopLoss){
+        for(let order of orders){
+          if((order.actual.close - item.actual.close) > (stoploss * order.actual.close/100)){
+            let currProfit = (item.actual.close - order.actual.close) * quantity;
+            let profitPct = ((item.actual.close - order.actual.close)/order.actual.close*100).toFixed(2)
+            item.profit = currProfit;
+            item.profitPct = profitPct
+            profit += currProfit;
+            profitArr.push({
+              profitPct,
+              currProfit:currProfit.toFixed(2)
+            });
+            item.trigger="SELL"
+          }else{
+            remainingOrders.push(order);
+          }
+        }
+        orders = remainingOrders;
+      }
+    }
 
     if(prevTrend != undefined && currTrend != prevTrend){
     
@@ -42,11 +67,19 @@ export default async function handler(req, res) {
         let maxProfit = Number.NEGATIVE_INFINITY;
         let maxProfitOrderTimestamp;
         for(let order of orders){
-          if((item.actual.close - order.actual.close) > (minChange * order.actual.close/100)){
+
+          let shouldSell = (item.actual.close - order.actual.close) > (minChange * order.actual.close/100);
+
+          if(shouldSell){
             let currProfit = (item.actual.close - order.actual.close) * quantity;
-            order.profit = currProfit;
+            let profitPct = ((item.actual.close - order.actual.close)/order.actual.close*100).toFixed(2)
+            item.profit = currProfit;
+            item.profitPct = profitPct
             profit += currProfit;
-            profitArr.push(currProfit);
+            profitArr.push({
+              profitPct,
+              currProfit:currProfit.toFixed(2)
+            });
             item.trigger="SELL"
           }else{
             console.log('SELL BLOCKED','actual',item.actual.close - order.actual.close,'expected',minChange *order.actual.close/100)
@@ -86,6 +119,8 @@ export default async function handler(req, res) {
       
     }
 
+
+
     prevTrend = currTrend;
 
   }
@@ -119,6 +154,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     minInvestment,
     query:req.query,
+    stoploss,
     profit,
     profitPct:profit/minInvestment,
     tradeCount,
@@ -128,7 +164,7 @@ export default async function handler(req, res) {
     },
     profitArr,
     pendingOrders,
-    history
+    // history
   });
     
 }

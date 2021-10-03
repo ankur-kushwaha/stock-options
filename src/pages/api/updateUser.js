@@ -1,8 +1,12 @@
+import dbConnect from '../../middleware/mongodb';
+
 // import { getKiteClient } from "../../helpers/kiteConnect";
 const User = require('../../models/user');
 
 
 export default async function handler(req, res) {
+
+  await dbConnect();
   
   let {userId,configs,orders,shortOrders,session,tradingsymbol} = req.body;
   let user = await  User.findOne({user_id:userId });

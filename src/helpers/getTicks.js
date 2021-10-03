@@ -18,6 +18,20 @@ export default function getTicks(instrumentTokens,callback){
       })
     })
 
+    // setInterval(() => {
+    //   let newPrice = Math.random()*50+200;
+    //   throttledCallback({
+    //     "9688578":{depth:{
+    //       buy:[{
+    //         price:newPrice
+    //       }],
+    //       sell:[{
+    //         price:newPrice
+    //       }]
+    //     }}
+    //   });
+    // }, 1000);
+
     socket.on('error',(data) => {
       console.error('getTicks',data);
     });
@@ -34,6 +48,9 @@ export default function getTicks(instrumentTokens,callback){
 
       // callback(ticks)
       throttledCallback(ticks);
+     
+        
+    
 
     })
       

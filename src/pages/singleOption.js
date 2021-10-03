@@ -213,8 +213,8 @@ export default function options2({
 }
 
 export async function getServerSideProps(ctx){
-  let {req} = ctx;
-  let {tradingsymbol,range=10} = req.query; // INFY
+  let {req,query} = ctx;
+  let {tradingsymbol,range=10} = query; // INFY
   let kc = await getKiteClient(req.cookies);
   
   let stockCodeId = `NSE:${tradingsymbol}`

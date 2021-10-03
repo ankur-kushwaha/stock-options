@@ -1,6 +1,13 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 
-export default function Price({small=false,threshold=0,children,reverseColoring}) {
+type PriceProps={
+  children:ReactNode,
+  small?:boolean,
+  threshold?:number,
+  reverseColoring?:boolean
+}
+
+export default function Price({small=false,threshold=0,children,reverseColoring}:PriceProps) {
 
   let cond;
 

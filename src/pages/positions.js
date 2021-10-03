@@ -61,15 +61,14 @@ export default function holdings({
         
       }
     
-      
-      
+      let buyValue = item.buy_value;
+      let quantity = item.quantity;
       let buyPrice = item.buy_price
       let breakeven = strike+buyPrice;
-      let minTimeValue = -stockPrice + (strike + currPrice);
-      let maxTimeValue = (-stockPrice + (strike + offerPrice))/stockPrice;
+      let timeValue = Math.min(buyValue,((strike + currPrice) - stockPrice)*quantity); 
       
-      let quantity = item.quantity;
-      let buyValue = item.buy_value;
+      
+      
       let currValue = Number((currPrice * quantity).toFixed(2));
       let pnl = (currPrice - buyPrice)*quantity;
 
@@ -121,8 +120,7 @@ export default function holdings({
         stockCode, 
         breakeven,
         stockPrice,
-        timeValue: minTimeValue,
-        maxTimeValue
+        timeValue
       }
     }).sort((a,b)=>a.pnl-b.pnl)
 
@@ -173,14 +171,9 @@ export default function holdings({
     {
       name: 'TimeValue',
       wrap:true,
-      selector: 'maxTimeValue',
+      selector: 'timeValue',
       sortable: true,
-      cell:row=><div>
-        <a target="_blank" href={`https://kite-client.web.app/?orderConfig=${row.tradingsymbol}:${row.lotSize}:${row.buyPrice}&variety=regular
-`} rel="noreferrer"><Price reverseColoring>{row.maxTimeValue}</Price></a>
-
-       
-      </div>
+      cell:row=><Price>{row.timeValue}</Price>
     },
     {
       name: 'Bid Price',

@@ -36,6 +36,7 @@ async function getDayHistory(tradingsymbol,options={}){
   }
   
 
+  console.log({'tradingsymbol':tradingsymbol,'exchange':defaultExchange})
   let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol,'exchange':defaultExchange});
   let token = zerodhaInstrument.toObject().exchange_token;
   let instrumentToken =  zerodhaInstrument.toObject().instrument_token;

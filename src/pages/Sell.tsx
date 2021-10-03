@@ -10,11 +10,13 @@ import BuySellConfig from '../components/BuySellConfig';
 import Head from 'next/head'
 import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
-import useAutoTrade from '../helpers/useAutoTrade';
+import useSellTrade from '../helpers/useSellTrade';
 
 export default function BuySell({
   userProfile
 }) {
+
+
   // const { addToast } = useToasts()
 
   let {query} = useRouter();
@@ -28,21 +30,49 @@ export default function BuySell({
     quantity : userProfile.configs?.quantity || 100,
     isBullish: (userProfile.configs?.isBullish == undefined)?true:!!userProfile.configs?.isBullish,
     marketOrder: !!userProfile.configs?.marketOrder,
-    interval:userProfile.configs?.interval||'ONE_MINUTE'
+    interval:userProfile.configs?.interval||'ONE_MINUTE',
+    instrumentToken:undefined
   }
-  const [config,setConfig] = React.useState(defaultConfig);
-  const {orders, pendingOrders,closedOrders,
+  const [config,setConfig] = React.useState({
+    ...defaultConfig,
+    shouldRun:false
+  });
+  const {
+    orders, 
+    pendingOrders,
+    closedOrders,
     closePrice,
-    startAutoTrade,deleteOrder,
-    updateOrder,
-    importOpenOrders,
+    startAutoTrade,
     save,
     triggerOrderNow,
+    stopAutoTrade,
+    deleteOrder,
+    // updateOrder,
+    importOpenOrders,
     sellOrder,
-    refreshPendingOrders,
-    stopAutoTrade} = useAutoTrade(config,userProfile);
+    // refreshPendingOrders,
+  } = useSellTrade(config,userProfile);
 
+  function shorten(num){
+    return Number(num.toFixed(2))
+  }
 
+  let openOrders = orders.map(item=>{
+    let buyPrice = item.buyOrder?.price;
+    let sellPrice = item.sellOrder?.price;
+    let quantity = item.buyOrder?.quantity||item.sellOrder?.quantity;
+    return{
+      status:item.status,
+      tradingsymbol:item.tradingsymbol,
+      quantity,
+      buyStatus:item.buyOrder?.status,
+      sellStatus:item.sellOrder?.status,
+      buyPrice,
+      sellPrice,
+      closePrice,
+      profit:shorten((sellPrice-(buyPrice||closePrice))*quantity)
+    }
+  })
 
 
   React.useEffect(()=>{
@@ -55,7 +85,6 @@ export default function BuySell({
         return;
       }
       
-
       setConfig({
         ...config,
         instrumentToken:quote.instrument_token
@@ -67,7 +96,7 @@ export default function BuySell({
 
   // Trigger trading
   React.useEffect(()=>{ 
-
+    console.log(userProfile)
     if(config.shouldRun){
       startAutoTrade()
     }else{
@@ -79,83 +108,31 @@ export default function BuySell({
 
   async function handleUpdate(config){
     setConfig(config);
-    await save({newConfig:config});
+    // await save({configs:config});
   }
 
-  let closedOrderColumns = [{
-    name:'tradingsymbol',
-    selector:'tradingsymbol',
-    grow:1
-  },{
-    name:'order_id',
-    selector:'orderId',
-    grow:1
-  },{
-    name:'quantity',
-    selector:'quantity'
-  },{
-    name:'status',
-    selector:'status'
-  },{
-    name:'buyPrice',
-    selector:'buyPrice'
-  },{
-    name:'sellPrice',
-    selector:'sellPrice'
-  },{
-    name:'profit',
-    selector:'profit',
-    cell:row=><div><Price>{row.profit}</Price><br/>
-    (<Price>{row.profitPct}</Price>)
-    </div>
-  },{
-    name:"Delete",
-    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'closedOrders')}><span className="icon has-text-info">
-      <i className="fas fa-times-circle"></i>
-    </span></button>
-  }]
-
-  const BaseExpandedComponent = ({data})=><div className={"box"}>
-    <span className="is-size-7">
-      OrderID:{data.order_id}
-    </span><br />
-    <span className="is-size-7">
-      Timestamp:{data.order_timestamp}
-    </span>
-    <br />
-    <pre>{JSON.stringify(data)}</pre>
-  </div>;
-
-  let pendingOrderColumns = [{
-    name:'Status',
-    selector:'status'
-  },{
-    name:'Quantity',
-    selector:'quantity'
-  },{
-    name:'Transaction',
-    selector:'transactionType'
-  },{
-    name:'Buy Price',
-    selector:'buyPrice',
-    cell:row=><>{row.buyPrice}</>
-  },{
-    name:'LTP',
-    selector:'LTP',
-    cell:row=><>{closePrice}</>
-  },{
-    name:"Delete",
-    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'pendingOrders')}>
-      <span className="icon has-text-info">
-        <i className="fas fa-times-circle"></i>
-      </span></button>
-  },{
-    name:"Update Price",
-    cell:row=><button className="button is-small" onClick={()=>updateOrder(row,'pendingOrders')}>
-     Update</button>
-  }]
-
   
+  const BaseExpandedComponent = ({data}:{data?:any})=>{
+
+    let fields = [{
+      key:'buyPrice'
+    },{
+      key:'sellPrice'
+    },{
+      key:'buyStatus'
+    },{
+      key:'sellStatus'
+    }]
+
+    return <div className={"box"}>
+
+      {fields.map(item=> <><span className="is-size-7">
+        {item.key}:{data[item.key]}
+      </span><br /></>)}
+  
+      <pre>{JSON.stringify(data,null,2)}</pre>
+    </div>
+  }
 
   let orderColumns=[{
     name:'TradingSymbol',
@@ -168,30 +145,20 @@ export default function BuySell({
     selector:'quantity'
   },{
     name:'Status',
-    selector:'status'
-  },{
-    name:'Buy Price',
-    selector:'buyPrice',
+    selector:'status',
   },{
     name:'LTP',
-    selector:'price',
-    cell:()=><>{closePrice}</>
+    selector:'closePrice',
   },{
-    name:'PnL',
-    selector:'pnl',
-    cell:(row)=>
-      <div>
-        <Price>{(closePrice - row.buyPrice)*row.quantity}</Price><br/> (<Price>{(closePrice - row.buyPrice)/row.buyPrice*100}</Price>)
-      </div>
+    name:'Profit',
+    selector:'profit',
   },{
     name:"Buy/Sell",
-    cell:row=><button className="button is-small" onClick={()=>sellOrder(row)}>Sell</button>
-  },{
-    name:"Delete",
-    cell:row=><button className="button is-small" onClick={()=>deleteOrder(row,'orders')}>
-      <span className="icon has-text-info">
-        <i className="fas fa-times-circle"></i>
-      </span></button>
+    cell:row=><><button className="button is-small" onClick={()=>sellOrder(row)}>Sell</button>
+      <button className="button is-small" onClick={()=>deleteOrder(row,'orders')}>
+        <span className="icon has-text-info">
+          <i className="fas fa-times-circle"></i>
+        </span></button></>
   }];
 
 
@@ -226,28 +193,28 @@ export default function BuySell({
 
 
           <div className="column">
+            ClosePrice:{closePrice}
             {pendingOrders.length>0 && <>
-              <button className="button is-small" onClick={()=>refreshPendingOrders()}>
+              <button className="button is-small">
                 Refersh Pending Orders
               </button>
-              <Table 
+              {/* <Table 
                 title={"Pending Orders"} 
                 columns={pendingOrderColumns} 
                 data={pendingOrders}
                 expandableRows={true}
                 ExpandedComponent={<BaseExpandedComponent/>}
-              ></Table>
+              ></Table> */}
             </>}
             <Table 
               title={"Open Orders"} 
               columns={orderColumns} 
-              data={orders}
+              data={openOrders}
               expandableRows={true}
               ExpandedComponent={<BaseExpandedComponent/>}
             ></Table>
-            {closedOrders.length>0 &&
-            <Table title={"Closed Orders"} columns={closedOrderColumns} data={closedOrders}></Table>
-            }
+            
+           
           </div>
         </div>
       </div>
@@ -260,6 +227,7 @@ export default function BuySell({
 export async function getServerSideProps(ctx) {
   
   let {req,res,query} = ctx;
+  // console.log(req)
   let {tradingsymbol} = query;
 
   let kc,userProfile;
@@ -272,16 +240,7 @@ export async function getServerSideProps(ctx) {
     res.end()
   }
   
-  
 
-  let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
-
-  let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];
-
-  userProfile.configs = session?.data.configs||dbUser.configs||{};
-  userProfile.orders = session?.data.orders||[]
-  userProfile.pendingOrders = session?.data.pendingOrders||[]
-  userProfile.closedOrders = session?.data.closedOrders||[];
   
 
   return {

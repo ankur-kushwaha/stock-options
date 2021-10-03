@@ -8,6 +8,8 @@ import KiteConnect from 'kiteconnect';
 import { getKiteClient } from '../helpers/kiteConnect';
 import Header from '../components/Header';
 import { validateUser } from '../helpers/userHelper';
+import connectDB from '../middleware/mongodb';
+import dbConnect from '../middleware/mongodb';
 let API_KEY = 'ab8oz67ryftv7gx9'
 
 var kc = new KiteConnect.KiteConnect({
@@ -63,10 +65,12 @@ async function generateAccessToken(requestToken) {
 
 export async function getServerSideProps(ctx) {
   let { req, res, query } = ctx;
-  let host = req.get( 'host');
-  console.log(req.query.host , host, req.query.request_token)
-  if(req.query.host && req.query.host != host){
-    let request_token = req.query.request_token;    
+  // console.log(ctx)
+  let host = req.headers.host;
+  console.log(13,host)
+  // console.log(req.query.host , host, req.query.request_token)
+  if(query.host && query.host != host){
+    let request_token = query.request_token;    
     if(req.query.host.search('localhost') >= 0){
       res.writeHead(301, { Location: `http://${req.query.host}?request_token=${request_token}`});
       return res.end()
@@ -105,6 +109,7 @@ export async function getServerSideProps(ctx) {
     }
   }
   let user;
+  await dbConnect()
 
   if(userProfile.user_id){
     user = await getUser(userProfile.user_id);
