@@ -27,7 +27,7 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
 
   const handleChange = (key,type)=>(e)=>{
     let value = e.target.value;
-    if(type == 'number'){
+    if(type == 'number' && value){
       value = Number(value)
     }
 
@@ -38,11 +38,11 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
       ...state,
       [key]:value
     })
-  }
 
-  function handleClickUpdate(){
-    console.log(state);
-    onUpdate && onUpdate(state)
+    onUpdate && onUpdate({
+      ...state,
+      [key]:value
+    })
   }
 
   const handleButtonClick = (type)=>()=>{
@@ -101,9 +101,19 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
                 <option>FIVE_MINUTE</option>
               </select>
             </div>
-            <ConfigItem type="number" title="Max Order" value={state.maxOrder} onChange={handleChange('maxOrder','number')}/>
-            <ConfigItem type="number" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
-            <ConfigItem type="number" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
+            <ConfigItem type="text" title="Max Order" value={state.maxOrder} onChange={handleChange('maxOrder','number')}/>
+            <ConfigItem type="text" title="Min Target" value={state.minTarget} onChange={handleChange('minTarget','number')}/>
+            <ConfigItem type="text" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
+            <div>
+              <label className="checkbox">
+                <input checked={state.stoplossEnabled} type="checkbox" onChange={handleChange('stoplossEnabled')}/>
+          &nbsp;
+                <span className="is-size-7">Stoploss enabled</span>
+              </label>
+            </div>
+            {state.stoplossEnabled &&
+            <ConfigItem type="text" title="Stoploss" value={state.stoploss} onChange={handleChange('stoploss','number')}/>
+            }
             <div>
               <label className="checkbox">
                 <input checked={state.marketOrder} type="checkbox" onChange={handleChange('marketOrder')}/>
@@ -125,7 +135,7 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
           
             <br />
       
-            <button className="is-fullwidth mb-2 button is-small" onClick={handleClickUpdate}>Update Settings</button>
+            {/* <button className="is-fullwidth mb-2 button is-small" onClick={handleClickUpdate}>Update Settings</button> */}
 
 
           </div>

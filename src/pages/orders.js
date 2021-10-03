@@ -5,6 +5,7 @@ import Table from '../components/Table'
 import { getKiteClient } from '../helpers/kiteConnect';
 import User from '../models/user'
 import getTicks from '../helpers/getTicks';
+import dbConnect from '../middleware/mongodb';
 
 export default function Orders({ userProfile }) {
   console.log(userProfile)
@@ -93,6 +94,8 @@ export async function getServerSideProps(ctx) {
     res.writeHead(307, { Location: `/` })
     return res.end()
   }
+
+  await dbConnect();
 
   let dbUser = (await User.findOne({ user_id: userProfile.user_id })).toObject();
 

@@ -22,6 +22,7 @@ export default function BuySell({
 
 
   let defaultConfig = {
+    ...userProfile.configs,
     tradingsymbol,
     maxOrder: userProfile.configs?.maxOrder || 5,
     minTarget:  userProfile.configs?.minTarget || 5,

@@ -8,6 +8,7 @@ import { useRouter } from 'next/router'
 import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
 import Head from 'next/head'
+import dbConnect from '../middleware/mongodb'
 import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
 import useSellTrade from '../helpers/useSellTrade';
@@ -15,15 +16,12 @@ import useSellTrade from '../helpers/useSellTrade';
 export default function BuySell({
   userProfile
 }) {
-
-
-  // const { addToast } = useToasts()
-
+  
   let {query} = useRouter();
   let {tradingsymbol} = query;
 
-
   let defaultConfig = {
+    ...userProfile.configs,
     tradingsymbol,
     maxOrder: userProfile.configs?.maxOrder || 5,
     minTarget:  userProfile.configs?.minTarget || 5,
@@ -39,18 +37,15 @@ export default function BuySell({
   });
   const {
     orders, 
-    pendingOrders,
-    closedOrders,
     closePrice,
     startAutoTrade,
     save,
     triggerOrderNow,
     stopAutoTrade,
     deleteOrder,
-    // updateOrder,
+    closePosition,
     importOpenOrders,
-    sellOrder,
-    // refreshPendingOrders,
+    updatePosition,
   } = useSellTrade(config,userProfile);
 
   function shorten(num){
@@ -61,7 +56,12 @@ export default function BuySell({
     let buyPrice = item.buyOrder?.price;
     let sellPrice = item.sellOrder?.price;
     let quantity = item.buyOrder?.quantity||item.sellOrder?.quantity;
+    let profit = shorten((sellPrice-(buyPrice||closePrice))*quantity)
+    if(item.buyOrder){
+      profit = shorten(((sellPrice||closePrice)-(buyPrice))*quantity)
+    }
     return{
+      ...item,
       status:item.status,
       tradingsymbol:item.tradingsymbol,
       quantity,
@@ -70,7 +70,8 @@ export default function BuySell({
       buyPrice,
       sellPrice,
       closePrice,
-      profit:shorten((sellPrice-(buyPrice||closePrice))*quantity)
+      profit,
+      buyOrder:item.buyOrder
     }
   })
 
@@ -96,7 +97,6 @@ export default function BuySell({
 
   // Trigger trading
   React.useEffect(()=>{ 
-    console.log(userProfile)
     if(config.shouldRun){
       startAutoTrade()
     }else{
@@ -108,7 +108,8 @@ export default function BuySell({
 
   async function handleUpdate(config){
     setConfig(config);
-    // await save({configs:config});
+    console.log(1,config)
+    await save({configs:config});
   }
 
   
@@ -146,6 +147,10 @@ export default function BuySell({
   },{
     name:'Status',
     selector:'status',
+    wrap:true
+  },{
+    name:'sellPrice',
+    selector:'sellPrice',
   },{
     name:'LTP',
     selector:'closePrice',
@@ -154,11 +159,22 @@ export default function BuySell({
     selector:'profit',
   },{
     name:"Buy/Sell",
-    cell:row=><><button className="button is-small" onClick={()=>sellOrder(row)}>Sell</button>
-      <button className="button is-small" onClick={()=>deleteOrder(row,'orders')}>
+    cell:row=><>
+
+      {row.status=='POSITION_OPEN'?<>
+        {row.buyOrder ?
+          <button className="button is-small" onClick={()=>closePosition(row)}>Sell</button>
+          :<button className="button is-small" onClick={()=>closePosition(row)}>Buy</button>
+        }
+      </>:<>
+        <button className="button is-small" onClick={()=>updatePosition(row)}>Update</button>
+      </>}
+      
+      <button className="button is-small" onClick={()=>deleteOrder(row)}>
         <span className="icon has-text-info">
           <i className="fas fa-times-circle"></i>
-        </span></button></>
+        </span></button>
+    </>
   }];
 
 
@@ -194,18 +210,7 @@ export default function BuySell({
 
           <div className="column">
             ClosePrice:{closePrice}
-            {pendingOrders.length>0 && <>
-              <button className="button is-small">
-                Refersh Pending Orders
-              </button>
-              {/* <Table 
-                title={"Pending Orders"} 
-                columns={pendingOrderColumns} 
-                data={pendingOrders}
-                expandableRows={true}
-                ExpandedComponent={<BaseExpandedComponent/>}
-              ></Table> */}
-            </>}
+           
             <Table 
               title={"Open Orders"} 
               columns={orderColumns} 
@@ -239,9 +244,11 @@ export async function getServerSideProps(ctx) {
     res.writeHead(307, { Location: `/`})
     res.end()
   }
-  
-
-  
+  await dbConnect()
+  let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();
+  let session = dbUser.sessions.filter(item=>item.tradingsymbol == tradingsymbol)[0];
+  userProfile.orders = session?.data.orders||[]  
+  userProfile.configs = session?.data.configs||dbUser.configs||{};
 
   return {
     props:{

@@ -47,10 +47,10 @@ export default function useZerodha(){
     console.log('Creating order...',url);
     if(dev){
       
-      url = url+"&variety=amo"
+      url = url+"&variety=amo";
       let res = await fetch(url).then(res=>res.json());
       if(res.error?.message){
-        console.log(res);
+        alert(res.error?.message)
         // addToast(res.error?.message)
       }
       return res.data?.order_id;

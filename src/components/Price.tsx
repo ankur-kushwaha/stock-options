@@ -1,7 +1,8 @@
+
 import React, { ReactNode } from 'react'
 
 type PriceProps={
-  children:ReactNode,
+  children:number,
   small?:boolean,
   threshold?:number,
   reverseColoring?:boolean
