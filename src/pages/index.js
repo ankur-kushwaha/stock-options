@@ -107,7 +107,7 @@ export async function getServerSideProps(ctx) {
     } else {
       //redirectKiteLogin(res);
     }
-  }
+  } 
   let user;
   await dbConnect()
 
