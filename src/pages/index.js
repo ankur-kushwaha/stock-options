@@ -72,7 +72,7 @@ export async function getServerSideProps(ctx) {
   if(query.host && query.host != host){
     let request_token = query.request_token;    
     if(query.host.search('localhost') >= 0){
-      res.writeHead(301, { Location: `http://${req.query.host}?request_token=${request_token}`});
+      res.writeHead(301, { Location: `http://${query.host}?request_token=${request_token}`});
       return res.end()
     }
   }
