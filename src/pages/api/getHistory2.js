@@ -1,8 +1,6 @@
 let { SmartAPI } = require("smartapi-javascript");
 const InstrumentHistory = require('../../models/InstrumentHistory');
 import date from 'date-and-time';
-import dbConnect from '../../middleware/mongodb'
-import { getHistory } from './updateHistory';
 
 
 let smart_api = new SmartAPI({
@@ -20,33 +18,10 @@ function sleep(ms) {
 }   
 
 export default async function handler(req, res) {
-  await dbConnect()
   await smart_api.generateSession("A631449", "Kushwaha1@")
-  let profile = await smart_api.getProfile();
-  console.log(profile);
   let instruments = req.query.instruments.split(",").filter(item=>item.indexOf('BE')==-1)
 
-  let today = date.format(new Date(),'YYYY-MM-DD') //2021-09-27"
-
-  let history = {},noData=[];
-  for(let instrument of instruments){
-    let data = await InstrumentHistory.find({name:instrument,date:today}).exec();
-    if(data){
-      // console.log(data);
-      noData.push(instrument)
-      history[instrument] = await getHistory({
-        instrument,
-        exchange:'NSE'
-      });
-    }else{
-      history[instrument] = data;
-    }
-
-  }
-
-  
-
-
-  res.status(200).json({history,noData})
+  let data = await InstrumentHistory.find({name:{$in:instruments}}).exec()
+  res.status(200).json({data})
     
 }

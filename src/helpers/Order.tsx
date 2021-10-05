@@ -97,6 +97,11 @@ class Order{
       console.log('No kite order recieved for orderid',orderId);
       return;
     }
+
+    if(currKiteOrder.status == 'REJECTED'){
+      alert(currKiteOrder.status_message);
+      return ;
+    }
   
     return getMappedOrder(currKiteOrder);
   }
@@ -169,6 +174,8 @@ class Order{
 
     if(position.status == 'COMPLETE'){
       this.status = OrderStatus.POSITION_OPEN
+    }else if(position.status == 'REJECTED'){
+
     }else{
       this.status = OrderStatus.POSITION_OPEN_PENDING
     }

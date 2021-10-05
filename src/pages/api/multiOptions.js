@@ -33,7 +33,7 @@ const ioHandler = async (req, res) => {
 
   let cacheBurst = true;
     
-  let stocks = ['INFY', 'TCS','WIPRO','HINDALCO','TATASTEEL','VEDL','MINDTREE', 'COFORGE', 'SRF', 'TATAPOWER'];
+  let stocks = ['INFY','TCS','WIPRO','HINDALCO','TATASTEEL','VEDL','MINDTREE', 'COFORGE', 'SRF', 'TATAPOWER'];
     
   let today = date.format(new Date(), 'YYYY-MM-DD');
   let cache = await getCachedResponse(today);

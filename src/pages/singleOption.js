@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import Sidebar from '../components/Sidebar'
 import Table from '../components/Table';
 import { fetchOptions } from '../helpers/dbHelper';
-import getTicks from '../helpers/getTicks';
+// import getTicks from '../helpers/getTicks';
 import { getKiteClient } from '../helpers/kiteConnect';
 import Price from '../components/Price'
 import useZerodha from '../helpers/useZerodha';
@@ -23,18 +23,18 @@ export default function options2({
   //   options
   // )
 
-  const [ticks,setTicks ] = React.useState([]);
+  // const [ticks,setTicks ] = React.useState([]);
   const [state,setState ] = React.useState({
     range:5,
     beChg:2
   });
 
   React.useEffect(()=>{
-    let instruments = [...Object.keys(options), stockQuote.instrument_token];
-    getTicks(instruments,function(data){
-      console.log(data)
-      setTicks([]);
-    })
+    // let instruments = [...Object.keys(options), stockQuote.instrument_token];
+    // getTicks(instruments,function(data){
+    //   console.log(data)
+    //   setTicks([]);
+    // })
   },[])
 
   let columns = [
@@ -87,9 +87,9 @@ export default function options2({
         (<Price reverseColoring>{row.timeValue2}</Price>)
       </div>
     },{
-      name: 'intrinsicValueDiff',   
-      selector: 'intrinsicValueDiff',   
-      cell:row=><Price>{row.intrinsicValueDiff}</Price>
+      name: 'intrinsicValue',   
+      selector: 'intrinsicValueAmt',   
+      cell:row=><div><Price>{row.intrinsicValueAmt}</Price><br/>(<Price>{row.intrinsicValuePct}</Price>)</div>
     }
   ].map(item=>{
     item.sortable = true;
@@ -100,14 +100,14 @@ export default function options2({
     let price = (quote.depth.sell[0].price) || quote.last_price;
     let stockPrice = stockQuote.last_price
 
-    if(ticks[quote.instrument_token]){
-      let latestQuote = ticks[quote.instrument_token];
-      price = (latestQuote.depth.sell[0].price) || latestQuote.last_price;
-    }
+    // if(ticks[quote.instrument_token]){
+    //   let latestQuote = ticks[quote.instrument_token];
+    //   price = (latestQuote.depth.sell[0].price) || latestQuote.last_price;
+    // }
     
-    if(ticks[stockQuote.instrument_token]){
-      stockPrice = ticks[stockQuote.instrument_token].last_price;
-    }
+    // if(ticks[stockQuote.instrument_token]){
+    //   stockPrice = ticks[stockQuote.instrument_token].last_price;
+    // }
 
     let option = options[quote.instrument_token]
     let breakeven = option.strike+price;
@@ -120,33 +120,27 @@ export default function options2({
     
     let daysDiff = Math.ceil((expiryDate-today) / (1000 * 60 * 60 * 24)) 
 
-    let intrinsicValue = (Math.max(stockPrice-option.strike,0))/price*100;
-    let timeValue  = 100-intrinsicValue;
+    let intrinsicValue = Math.max(stockPrice-option.strike,0);
+    let intrinsicValueAmt = intrinsicValue * option.lot_size;
+    let intrinsicValuePct = intrinsicValue/price*100;
+    let timeValue  = (price-intrinsicValue)*option.lot_size;;
+    let timeValue2  = (price-intrinsicValue)/price*100
 
     let futurePrice = price - ((timeValue*price/daysDiff)/100) + (stockPrice*0.01);
     let roi = (futurePrice - price) / price * 100;
 
     
-   
-
-    let updateStockPrice = stockPrice+ 0.01*stockPrice;
-
-    let intrinsicValue2 = (Math.max(updateStockPrice-option.strike,0))/price*100;
-    let timeValue2  = 100 - intrinsicValue2;
-
-    let intrinsicValueDiff = intrinsicValue2- intrinsicValue;
-
+    
     return {
       ...quote,
       ...option,
       price,
-      intrinsicValueDiff,
       beChg,
       timeValue,
-      intrinsicValue,
+      intrinsicValueAmt,
+      intrinsicValuePct,
       timeValue2,
       futurePrice,
-      intrinsicValue2,
       roi,
       minInvestment,
       daysDiff,
@@ -157,7 +151,6 @@ export default function options2({
       return item.price
     && item.daysDiff < 60 
     && item.daysDiff>0
-    && item.intrinsicValue2 >0
 
     }).sort((a,b)=>-a.roi+b.roi);
 

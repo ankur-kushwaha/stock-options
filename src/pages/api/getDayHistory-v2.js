@@ -23,7 +23,7 @@ async function getDayHistory(tradingsymbol,options={}){
     daysAgo=0,
     interval="ONE_MINUTE",
     range=1,
-    defaultExchange='NSE'
+    defaultExchange='NFO'
   } = options;
 
   await smart_api.generateSession("A631449", "Kushwaha1@")
@@ -42,11 +42,11 @@ async function getDayHistory(tradingsymbol,options={}){
   let instrumentToken =  zerodhaInstrument.toObject().instrument_token;
   let exchange = zerodhaInstrument.toObject().exchange;
 
-  let doc = (await AngelInstrument.findOne({'token':token})).toObject();
+  // let doc = (await AngelInstrument.findOne({'token':token})).toObject();
 
   let params =  {
     "exchange": exchange||'NSE',
-    "symboltoken": doc.token,
+    "symboltoken": token,
     "interval": interval||"ONE_MINUTE",
     "fromdate": date.format(fromDate, 'YYYY-MM-DD 14:00'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:40')//"2021-03-10 09:20"

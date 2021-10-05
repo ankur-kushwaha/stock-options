@@ -11,6 +11,7 @@ import Head from 'next/head'
 import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
 import useAutoTrade from '../helpers/useAutoTrade';
+import dbConnect from '../middleware/mongodb'
 
 export default function BuySell({
   userProfile
@@ -273,6 +274,7 @@ export async function getServerSideProps(ctx) {
     res.end()
   }
   
+  await dbConnect();
   
 
   let dbUser = (await User.findOne({user_id:userProfile.user_id})).toObject();

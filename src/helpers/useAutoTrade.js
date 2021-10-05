@@ -124,7 +124,7 @@ export default function useAutoTrade(config,userProfile){
     if(!quote){
       return;
     }
-    console.log(quote)
+    console.log(quote.signal,quote)
     let signal = quote.signal;
     let orders = [...state.orders],pendingOrders=[...state.pendingOrders],closedOrders=[...state.closedOrders];
 
@@ -179,6 +179,36 @@ export default function useAutoTrade(config,userProfile){
             }
           }else{
             console.log('Sell order blocked, minChange',minChange,'Curr Change',currChange);
+          }
+        }
+      }
+    }
+
+    let enabledStoploss = true;
+    let stoploss = config.minTarget/2;
+    if(enabledStoploss){
+      for(let openOrder of state.orders){
+        let maxLoss = stoploss * openOrder.averagePrice/100;
+        let currChange = openOrder.averagePrice - closePrice;
+
+        if(currChange > maxLoss){
+          console.log('Stoploss hit..., currChange',currChange, 'maxLoss',maxLoss);
+          let sellOrder = await createOrder({
+            transactionType:"SELL",
+            quantity:0
+          });
+          if(sellOrder){
+            hasOrdersUpdated = true;
+            orders = orders.filter(item => item.orderId != openOrder.orderId);
+            if(sellOrder.status == 'COMPLETE'){
+              let soldOrder = createClosedOrder(openOrder,sellOrder)
+              soldOrder.status = 'AUTOSELL_COMPLETE'
+              closedOrders.unshift(soldOrder);
+            }else{
+              sellOrder.buyPrice = openOrder.averagePrice;
+              sellOrder.status = 'AUTOSELL_PENDING'
+              pendingOrders.push(sellOrder)
+            }
           }
         }
       }

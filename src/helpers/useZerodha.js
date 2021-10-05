@@ -1,5 +1,5 @@
 import { useToasts } from 'react-toast-notifications'
-const dev = true;//process.env.NODE_ENV !== 'production';
+const dev = false;//process.env.NODE_ENV !== 'production';
 
 export default function useZerodha(){
   // const { addToast } = useToasts()
@@ -47,7 +47,7 @@ export default function useZerodha(){
     console.log('Creating order...',url);
     if(dev){
       
-      url = url+"&variety=amo";
+      url = url;//+"&variety=amo";
       let res = await fetch(url).then(res=>res.json());
       if(res.error?.message){
         alert(res.error?.message)

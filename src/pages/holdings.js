@@ -149,7 +149,23 @@ export default function Holdings({holdings,profile,quotes}) {
             </div>
           </div>
           <div className="column">
-            <Table data={data} columns ={columns}></Table>
+            {/* <Table data={data} columns ={columns}></Table> */}
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    {columns.map(item=><td key={item.selector}>{item.name}</td>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.map((item,i)=>
+                    <tr key={i}>
+                      {columns.map((cell,j)=><td key={j}>{item[cell.selector]}</td>)}
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         
         </div>
