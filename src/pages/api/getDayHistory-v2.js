@@ -18,14 +18,13 @@ function sleep(ms) {
   });
 }   
 
-async function getDayHistory(tradingsymbol,options={}){
-  let {
-    daysAgo=0,
-    interval="ONE_MINUTE",
-    range=1,
-    defaultExchange='NFO'
-  } = options;
-
+export async function getCandleData({
+  daysAgo,
+  range,
+  defaultExchange,
+  tradingsymbol,
+  interval
+}){
   await smart_api.generateSession("A631449", "Kushwaha1@")
   let today  = new Date();
 
@@ -51,16 +50,41 @@ async function getDayHistory(tradingsymbol,options={}){
     "fromdate": date.format(fromDate, 'YYYY-MM-DD 14:00'),  //"2021-02-10 09:00",
     "todate":  date.format(toDate, 'YYYY-MM-DD 15:40')//"2021-03-10 09:20"
   }
-  let response = await smart_api.getCandleData(params)
-  let data = response.data;
-  if(data == null){
+  let response;
+  try{
+
+    response = await smart_api.getCandleData(params)
+  }catch(e){
+    console.log(e);
+  }
+  if(!response || !response.data == null){
     console.log('res',response)
-    console.log(tradingsymbol,params,response,options);
-    throw new Error('No history response from server',{
-      
-    });
+    console.log(tradingsymbol,params,response);
+    throw new Error('No history response from server');
     // data=[]
   }
+  let data = response.data;
+  return {
+    data,
+    instrumentToken
+  };
+}
+
+async function getDayHistory(tradingsymbol,options={}){
+  let {
+    daysAgo=0,
+    interval="ONE_MINUTE",
+    range=1,
+    defaultExchange='NFO'
+  } = options;
+
+  let {data,instrumentToken} = await getCandleData({
+    daysAgo,
+    interval,
+    range,
+    tradingsymbol,
+    defaultExchange
+  })
   
   let first = data[0];
   let prev = {
@@ -94,12 +118,15 @@ async function getDayHistory(tradingsymbol,options={}){
 
 export default async function handler(req, res) {
   
-  let {instruments, interval}  = req.query
+  let {instruments, interval,defaultExchange}  = req.query
 
-  instruments = instruments.split(",").filter(item=>item.indexOf('BE')==-1)
+  instruments = instruments
+    .split(",")
+    .filter(item=>item.indexOf('BE')==-1)
   
   let history  =await getDayHistory(instruments[0],{
-    interval
+    interval,
+    defaultExchange
   })
   res.status(200).json({history})
 }

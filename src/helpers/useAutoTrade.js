@@ -119,47 +119,82 @@ export default function useAutoTrade(config,userProfile){
     
   },[config.instrumentToken])
 
-  React.useEffect(async ()=>{
-    let quote = history[history.length-1];
-    if(!quote){
-      return;
-    }
-    console.log(quote.signal,quote)
-    let signal = quote.signal;
-    let orders = [...state.orders],pendingOrders=[...state.pendingOrders],closedOrders=[...state.closedOrders];
+  React.useEffect(()=>{
 
-    let hasOrdersUpdated = false;
-    if(state.signal && state.signal != signal){
-      if(signal == 'GREEN'){
+    async function run(){
+      let quote = history[history.length-1];
+      if(!quote){
+        return;
+      }
+      console.log(quote.signal,quote)
+      let signal = quote.signal;
+      let orders = [...state.orders],pendingOrders=[...state.pendingOrders],closedOrders=[...state.closedOrders];
 
-        if((orders.length + pendingOrders.length) < config.maxOrder){
-          let buyOrder = await createOrder({
-            transactionType:"BUY"
-          });
-          if(buyOrder){
-            hasOrdersUpdated = true;
-            if(buyOrder.status == 'COMPLETE'){
-              buyOrder.status = 'AUTOBUY_COMPLETE'
-              buyOrder.buyPrice = buyOrder.averagePrice;
-              orders.push(buyOrder);
+      let hasOrdersUpdated = false;
+      if(state.signal && state.signal != signal){
+        if(signal == 'GREEN'){
+
+          if((orders.length + pendingOrders.length) < config.maxOrder){
+            let buyOrder = await createOrder({
+              transactionType:"BUY"
+            });
+            if(buyOrder){
+              hasOrdersUpdated = true;
+              if(buyOrder.status == 'COMPLETE'){
+                buyOrder.status = 'AUTOBUY_COMPLETE'
+                buyOrder.buyPrice = buyOrder.averagePrice;
+                orders.push(buyOrder);
+              }else{
+                buyOrder.status = 'AUTOBUY_PENDING'
+                buyOrder.buyPrice = closePrice;
+                pendingOrders.push(buyOrder);
+              }
+            }
+          }else{
+            console.log('Buy order limit exceeded, Limit ', config.maxOrder);
+          }
+        }
+
+        else if(signal == 'RED'){
+
+          for(let openOrder of state.orders){
+            let minChange = config.minTarget * openOrder.averagePrice/100;
+            let currChange = closePrice - openOrder.averagePrice;
+
+            if(currChange > minChange){
+              let sellOrder = await createOrder({
+                transactionType:"SELL",
+                quantity:0
+              });
+              if(sellOrder){
+                hasOrdersUpdated = true;
+                orders = orders.filter(item => item.orderId != openOrder.orderId);
+                if(sellOrder.status == 'COMPLETE'){
+                  let soldOrder = createClosedOrder(openOrder,sellOrder)
+                  soldOrder.status = 'AUTOSELL_COMPLETE'
+                  closedOrders.unshift(soldOrder);
+                }else{
+                  sellOrder.buyPrice = openOrder.averagePrice;
+                  sellOrder.status = 'AUTOSELL_PENDING'
+                  pendingOrders.push(sellOrder)
+                }
+              }
             }else{
-              buyOrder.status = 'AUTOBUY_PENDING'
-              buyOrder.buyPrice = closePrice;
-              pendingOrders.push(buyOrder);
+              console.log('Sell order blocked, minChange',minChange,'Curr Change',currChange);
             }
           }
-        }else{
-          console.log('Buy order limit exceeded, Limit ', config.maxOrder);
         }
       }
 
-      else if(signal == 'RED'){
-
+      let enabledStoploss = config.enabledStoploss;
+      let stoploss = config.stoploss;
+      if(enabledStoploss){
         for(let openOrder of state.orders){
-          let minChange = config.minTarget * openOrder.averagePrice/100;
-          let currChange = closePrice - openOrder.averagePrice;
+          let maxLoss = stoploss * openOrder.averagePrice/100;
+          let currChange = openOrder.averagePrice - closePrice;
 
-          if(currChange > minChange){
+          if(currChange > maxLoss){
+            console.log('Stoploss hit..., currChange',currChange, 'maxLoss',maxLoss);
             let sellOrder = await createOrder({
               transactionType:"SELL",
               quantity:0
@@ -177,73 +212,41 @@ export default function useAutoTrade(config,userProfile){
                 pendingOrders.push(sellOrder)
               }
             }
-          }else{
-            console.log('Sell order blocked, minChange',minChange,'Curr Change',currChange);
           }
         }
       }
-    }
 
-    let enabledStoploss = true;
-    let stoploss = config.minTarget/2;
-    if(enabledStoploss){
-      for(let openOrder of state.orders){
-        let maxLoss = stoploss * openOrder.averagePrice/100;
-        let currChange = openOrder.averagePrice - closePrice;
-
-        if(currChange > maxLoss){
-          console.log('Stoploss hit..., currChange',currChange, 'maxLoss',maxLoss);
-          let sellOrder = await createOrder({
-            transactionType:"SELL",
-            quantity:0
-          });
-          if(sellOrder){
-            hasOrdersUpdated = true;
-            orders = orders.filter(item => item.orderId != openOrder.orderId);
-            if(sellOrder.status == 'COMPLETE'){
-              let soldOrder = createClosedOrder(openOrder,sellOrder)
-              soldOrder.status = 'AUTOSELL_COMPLETE'
-              closedOrders.unshift(soldOrder);
-            }else{
-              sellOrder.buyPrice = openOrder.averagePrice;
-              sellOrder.status = 'AUTOSELL_PENDING'
-              pendingOrders.push(sellOrder)
-            }
-          }
-        }
-      }
-    }
-
-    setState({
-      ...state,
-      signal,
-      orders,
-      pendingOrders,
-      closedOrders
-    })
-
-    console.log("orders",orders,
-      pendingOrders,
-      closedOrders)
-
-    if(hasOrdersUpdated){
-      await save({
+      setState({
+        ...state,
+        signal,
         orders,
         pendingOrders,
         closedOrders
       })
-    }
 
+      console.log("orders",orders,
+        pendingOrders,
+        closedOrders)
+
+      if(hasOrdersUpdated){
+        await save({
+          orders,
+          pendingOrders,
+          closedOrders
+        })
+      }
+    }
+    run()
     
 
   },[history.length]);
 
-  async function save({
+  const save=(async ({
     newConfig,
     orders,
     pendingOrders,
     closedOrders
-  }={}){
+  }={})=>{
     
     let data = {
       userId:userProfile.user_id,
@@ -259,9 +262,9 @@ export default function useAutoTrade(config,userProfile){
     console.log('Saving user',data);
     await postData('/api/updateUser',data);
     
-  }
+  })
 
-  async function deleteOrder(order,type){
+  const deleteOrder = (async(order,type)=>{
     console.log('deleting order', order,type)
     let orders = [...state[type]];
     
@@ -281,9 +284,9 @@ export default function useAutoTrade(config,userProfile){
     await save({
       [type]:orders
     })
-  }
+  })
 
-  async function updateOrder(order,type){
+  async function updateOrder(order){
     let pendingOrders = [...state.pendingOrders];
     let res = await postData('/api/modifyOrder',{
       variety:"regular",

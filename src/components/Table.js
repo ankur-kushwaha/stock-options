@@ -6,7 +6,60 @@ const BaseExpandedComponent = ({ data }) => <pre>
   {JSON.stringify(data, null, 2)}</pre>;
 
 
-export default function Table({ pagination=true,title,data,columns ,ExpandedComponent,expandableRows}) { 
+export default function Table({columns,data}){
+  let [sortOrder,setSortOrder ] = React.useState({
+    order:true
+  })
+
+  const changeSortOrder = (key)=>()=>{
+    setSortOrder({
+      key,
+      order:!sortOrder.order
+    })
+  }
+
+  data = data.sort((a,b)=>{
+    if(isNaN(Number(a[sortOrder.key]))){
+      if(sortOrder.order){
+        return (a[sortOrder.key])<(b[sortOrder.key])?1:-1
+      }else{
+        return (b[sortOrder.key])>(a[sortOrder.key])?-1:1
+      }
+    }else{
+      if(sortOrder.order){
+        return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?1:-1
+      }else{
+        return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?-1:1
+      }
+    }
+    
+  });
+
+  return (
+    <div className="table-container">
+      <table width={"100%"} className="table">
+        <thead>
+          <tr>
+            {columns.map(item=><th onClick={changeSortOrder(item.selector)} key={item.selector}>{item.name}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item,i)=>
+            <tr key={i}>
+              {columns.map((cell,j)=>
+                <td key={j}>
+                  {cell.cell?<cell.cell {...item}/>:
+                    item[cell.selector]}
+                </td>)}
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function Table2({ pagination=true,title,data,columns ,ExpandedComponent,expandableRows}) { 
   const handleClick = (item, type) => () => {
     let price = item.price,transactionType='BUY';
         

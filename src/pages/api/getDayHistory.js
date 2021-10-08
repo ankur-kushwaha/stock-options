@@ -6,7 +6,7 @@ export default async function handler(req, res) {
 
   let history = await getDayHistory(tradingsymbol,{
     daysAgo,
-    interval:"THREE_MINUTE",
+    interval:"ONE_MINUTE",
     defaultExchange:'NFO'
   });
   

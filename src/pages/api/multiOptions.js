@@ -29,6 +29,8 @@ async function saveHistory(stock,date,history){
 
 
 
+
+
 const ioHandler = async (req, res) => {
 
   let cacheBurst = true;

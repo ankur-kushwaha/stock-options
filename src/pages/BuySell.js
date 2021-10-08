@@ -2,13 +2,11 @@ import React from 'react'
 import Header from '../components/Header';
 import Price from '../components/Price';
 import Table from '../components/Table';
-import useZerodha from '../helpers/useZerodha';
 import { getKiteClient } from '../helpers/kiteConnect';
 import { useRouter } from 'next/router'
 import User from '../models/user'
 import BuySellConfig from '../components/BuySellConfig';
 import Head from 'next/head'
-import { useToasts } from 'react-toast-notifications'
 import fetch from '../helpers/fetch';
 import useAutoTrade from '../helpers/useAutoTrade';
 import dbConnect from '../middleware/mongodb'
@@ -25,12 +23,16 @@ export default function BuySell({
   let defaultConfig = {
     ...userProfile.configs,
     tradingsymbol,
+
     maxOrder: userProfile.configs?.maxOrder || 5,
     minTarget:  userProfile.configs?.minTarget || 5,
     quantity : userProfile.configs?.quantity || 100,
     isBullish: (userProfile.configs?.isBullish == undefined)?true:!!userProfile.configs?.isBullish,
     marketOrder: !!userProfile.configs?.marketOrder,
-    interval:userProfile.configs?.interval||'ONE_MINUTE'
+    interval:userProfile.configs?.interval||'ONE_MINUTE',
+    shouldRun:false,
+    enabledStoploss:true,
+    stoploss:userProfile.configs?.minTarget||5
   }
   const [config,setConfig] = React.useState(defaultConfig);
   const {orders, pendingOrders,closedOrders,
@@ -42,10 +44,8 @@ export default function BuySell({
     triggerOrderNow,
     sellOrder,
     refreshPendingOrders,
-    stopAutoTrade} = useAutoTrade(config,userProfile);
-
-
-
+    stopAutoTrade
+  } = useAutoTrade(config,userProfile);
 
   React.useEffect(()=>{
     console.log(userProfile);
@@ -56,7 +56,6 @@ export default function BuySell({
         console.log('Quote not available for ', tradingsymbol)
         return;
       }
-      
 
       setConfig({
         ...config,

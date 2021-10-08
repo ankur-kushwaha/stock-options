@@ -18,11 +18,10 @@ function ConfigItem({
   </div></>)
 }
 
-export default function BuySellConfig({config,onUpdate,triggerNow,importStock,}) {
-  
+export default React.memo(({config,onUpdate,triggerNow,importStock,})=>{
+   
   const [state,setState] = React.useState({
     ...config,
-    
   }||{});
 
   const handleChange = (key,type)=>(e)=>{
@@ -106,12 +105,12 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
             <ConfigItem type="text" title="Quantity" value={state.quantity} onChange={handleChange('quantity','number')}/>
             <div>
               <label className="checkbox">
-                <input checked={state.stoplossEnabled} type="checkbox" onChange={handleChange('stoplossEnabled')}/>
+                <input checked={state.enabledStoploss} type="checkbox" onChange={handleChange('enabledStoploss')}/>
           &nbsp;
                 <span className="is-size-7">Stoploss enabled</span>
               </label>
             </div>
-            {state.stoplossEnabled &&
+            {state.enabledStoploss &&
             <ConfigItem type="text" title="Stoploss" value={state.stoploss} onChange={handleChange('stoploss','number')}/>
             }
             <div>
@@ -149,4 +148,4 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock,})
      
     </div>
   )
-}
+})

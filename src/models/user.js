@@ -71,6 +71,12 @@ var user = new Schema({
     },
     "isBearish": {
       "type": "Boolean"
+    },
+    "enabledStoploss": {
+      "type": "Boolean"
+    },
+    "stoploss": {
+      "type": "Number"
     }
   },
   "orders":{

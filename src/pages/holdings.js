@@ -1,6 +1,6 @@
 import React from 'react'
 import { getKiteClient } from '../helpers/kiteConnect';
-import getTicks from '../helpers/getTicks';
+// import getTicks from '../helpers/getTicks';
 
 import Table from '../components/Table';
 import Header from '../components/Header';
@@ -18,58 +18,52 @@ function sleep(ms) {
 export default function Holdings({holdings,profile,quotes}) {
 
   let instruments = holdings.map(item=>item.instrument_token);
-  let [marketDepth, setMarketDepth] = React.useState();
+  // let [marketDepth, setMarketDepth] = React.useState();
   let [history, setHistory] = React.useState({});
   let [filters,setFilters] = React.useState({});
 
+  
   // console.log(holdings)
   async function getHistory(instruments){
     return fetch('/api/getHistory?instruments='+instruments.join(",")).then(res=>res.json());
   }
 
   React.useEffect(async ()=>{
-    getTicks(instruments,function(ticks){
-      setMarketDepth(ticks);
-    });
+    // getTicks(instruments,function(ticks){
+    //   setMarketDepth(ticks);
+    // });
+    console.log(profile)
 
     let historyData = await getHistory(holdings.map(item=>item.tradingsymbol));
-    let out = historyData.data.reduce((a,b)=>{
-      a[b.name]=b;
-      return a;
-    },{})
+    let out = historyData.history
     console.log(out)
     setHistory(out);
     
   },[])
 
-  if(marketDepth){
-    for(let holding of holdings){
+  // if(marketDepth){
+  //   for(let holding of holdings){
 
-      holding.last_price = marketDepth[holding.instrument_token].last_price
-      holding.day_change_percentage = marketDepth[holding.instrument_token].change
+  //     holding.last_price = marketDepth[holding.instrument_token].last_price
+  //     holding.day_change_percentage = marketDepth[holding.instrument_token].change
 
-    }
-  }
+  //   }
+  // }
 
   let data = holdings.map(item=>{
     if(history){
       let itemHistory = history[item.tradingsymbol];
       if(itemHistory){
-        item = {...item,...itemHistory,change:Number(itemHistory.change)}
+        item = {...item,...itemHistory}
       }
-      
     }
     return item;
+  }).filter(item=>{
+    if(filters.signal){
+      return item.signal == filters.signal
+    }
+    return item.signal
   })
-    .filter(item=>{
-      if(!filters.trend)
-        return true 
-      else 
-        return item.trend==filters.trend
-    })
-    .sort((a,b)=>a.trendCount-b.trendCount)
-
-
 
   let columns = [
     {
@@ -79,38 +73,43 @@ export default function Holdings({holdings,profile,quotes}) {
     },
     {
       name: 'trend',
-      selector: 'trend',
+      selector: 'signal',
     },
     {
-      name: 'trendCount',
-      selector: 'trendCount',
+      name: 'Reversed',
+      selector: 'lastReverse',
     },
     {
-      name: 'Change',
-      selector: 'change',
-      cell:row=><Price>{row.change}</Price>
-    },
-    {
-      name: 'quantity',
-      selector: 'quantity',
-    },
-    
-    {
-      name: 'day_change_percentage',
+      name: 'Day Change',
       selector: 'day_change_percentage',
       cell:row=><Price>{row.day_change_percentage}</Price>
     },
     {
-      name: 'average_price',
-      selector: 'average_price',
-      cell:row=><>{row.average_price.toFixed(2)}</>
+      name: '5D Change',
+      selector: 'day5Change',
+      cell:row=><Price>{row.day5Change}</Price>
     },
     {
-      name: 'last_price',
+      name: '10D Change',
+      selector: 'day10Change',
+      cell:row=><Price>{row.day10Change}</Price>
+    },
+    {
+      name: 'Quantity',
+      selector: 'quantity',
+    },
+    
+    {
+      name: 'Buy Avg',
+      selector: 'average_price',
+      cell:row=><>{row.average_price?.toFixed(2)}</>
+    },
+    {
+      name: 'LTP',
       selector: 'last_price',
     },
     {
-      name: 'pnl',
+      name: 'PnL',
       selector: 'pnl',
       cell:row=><Price>{row.pnl}</Price>
     }]
@@ -120,60 +119,37 @@ export default function Holdings({holdings,profile,quotes}) {
     })
 
   const onChangeFilters=(key)=>(e)=>{
-    console.log(key,e.target.value)
     setFilters({
       ...filters,
       [key]:e.target.value
     })
   }
 
-
-
   return (
     <>
-      <Header profile = {profile}></Header>
+      <Header userProfile = {profile}></Header>
       <div className="container mt-6">
         <div className="columns">
           <div className="column is-3">
-            <div className="filter-item">
+            <div className="filter-item box">
               <div className="is-size-7">
-           Trend
+                Trend
               </div>
               <div className="select is-small">
-                <select onChange={onChangeFilters('trend')}>
-                  <option>Select</option>
-                  <option>POSITIVE</option>
-                  <option>NEGATIVE</option>
+                <select onChange={onChangeFilters('signal')}>
+                  <option value="">Select</option>
+                  <option>GREEN</option>
+                  <option>RED</option>
                 </select>
               </div>
             </div>
           </div>
           <div className="column">
-            {/* <Table data={data} columns ={columns}></Table> */}
-            <div className="table-container">
-              <table className="table">
-                <thead>
-                  <tr>
-                    {columns.map(item=><td key={item.selector}>{item.name}</td>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((item,i)=>
-                    <tr key={i}>
-                      {columns.map((cell,j)=><td key={j}>{item[cell.selector]}</td>)}
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <Table data={data} columns ={columns}></Table>
           </div>
         
         </div>
       </div>
-      
-      
-        
-      
     </>
   )
 }

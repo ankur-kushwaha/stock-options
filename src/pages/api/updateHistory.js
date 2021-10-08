@@ -3,6 +3,7 @@ let { SmartAPI, WebSocket } = require("smartapi-javascript");
 const AngelInstrument = require('../../models/angelInstruments');
 const InstrumentHistory = require('../../models/InstrumentHistory');
 import date from 'date-and-time';
+import { getCandleData } from "./getDayHistory-v2";
 
 
 let smart_api = new SmartAPI({
@@ -19,53 +20,7 @@ function sleep(ms) {
   });
 }   
 
-export async function getHistory({
-  instrument,
-  exchange
-}){
 
-  const toDate = new Date();
-  const fromDate = date.addDays(toDate, -10);
-
-  let doc = await AngelInstrument.findOne({name:instrument,exch_seg:'NSE',symbol:{ $not: /BL/ }});
-
-  let params = {
-    "exchange": exchange||"NSE",
-    "symboltoken": 'INFY',
-    "interval": "ONE_DAY",
-    "fromdate": date.format(fromDate, 'YYYY-MM-DD 09:00'),  //"2021-02-10 09:00",
-    "todate":  date.format(toDate, 'YYYY-MM-DD 15:00')//"2021-03-10 09:20"
-  }
-  let candleData = await smart_api.getCandleData(params);
-  console.log(1,instrument,doc,params,candleData);
-  let data = candleData.data;
-  let first = data[0];
-  let prev = {
-    timestamp:first.timestamp,
-    close : (first[1]+first[2]+first[4]+first[3])/4,
-    open : (first[1]+first[4])/2
-  }
-
-  let history = []
-  for(let item of data){
-    history.push({
-      timestamp:item[0].timestamp,
-      close:(item[1]+item[2]+item[3]+item[4])/4,
-      open : (prev.open+prev.close)/2
-    })
-    prev = history[history.length-1];
-  }
-
-  return {
-    ...(doc.toObject()),
-    timestamp:history[0].timestamp,
-    change:0,
-    trendCount:0,
-    trend:0,
-    history
-  };
-
-}
 
 export default async function handler(req, res) {
 
@@ -80,9 +35,13 @@ export default async function handler(req, res) {
   console.log(instruments)
   let out=[];
   for(let instrument of instruments){
-    let history = await getHistory({
-      instrument
-    });
+    let history = await getCandleData({
+      daysAgo:0,
+      range:10,
+      defaultExchange:"NSE",
+      tradingsymbol:instrument,
+      interval:'ONE_DAY'
+    })
     out.push(history);
     await sleep(500);
   }

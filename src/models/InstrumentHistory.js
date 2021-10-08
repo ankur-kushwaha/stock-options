@@ -2,6 +2,9 @@ const mongoose =require( 'mongoose');
 var Schema = mongoose.Schema;
 
 var instrumentHistory = new Schema({
+  name:{
+    "type": "String"
+  },
   lastChange:{
     "type": "Number"
   },

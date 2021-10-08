@@ -88,8 +88,6 @@ export async function getServerSideProps(ctx) {
     console.log('error', e)
   }
 
-
-
   if (!userProfile) {
     res.writeHead(307, { Location: `/` })
     return res.end()
