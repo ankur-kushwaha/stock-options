@@ -4,7 +4,7 @@ const User = require('../models/user');
 async function fetchOptions({
   instrumentType='CE',
   tradingsymbol,
-  expiry
+  expiry=""
 }) {
 
   

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 
-export default function Header({ userProfile={},tab}) {
+export default function Header({ userProfile={},tab=""}) {
   let { user_name } = userProfile;
   const router = useRouter()
   let [state,setState] = React.useState({})
