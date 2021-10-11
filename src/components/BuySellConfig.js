@@ -18,7 +18,7 @@ function ConfigItem({
   </div></>)
 }
 
-export default React.memo(({config,onUpdate,triggerNow,importStock,})=>{
+export default function BuySellConfig({config,onUpdate,triggerNow,importStock}){
    
   const [state,setState] = React.useState({
     ...config,
@@ -148,4 +148,4 @@ export default React.memo(({config,onUpdate,triggerNow,importStock,})=>{
      
     </div>
   )
-})
+}

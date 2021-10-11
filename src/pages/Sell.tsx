@@ -212,11 +212,8 @@ export default function BuySell({
             ClosePrice:{closePrice}
            
             <Table 
-              title={"Open Orders"} 
               columns={orderColumns} 
               data={openOrders}
-              expandableRows={true}
-              ExpandedComponent={<BaseExpandedComponent/>}
             ></Table>
             
            
