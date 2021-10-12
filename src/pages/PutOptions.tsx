@@ -166,7 +166,7 @@ export default function options2({
       && item.daysDiff>0
       && item.buySellDiff < 0.1
     
-      if(query.expiry.length>0){
+      if(query.expiry?.length>0){
         cond = cond && item.expiry == query.expiry
       }
       return cond;
