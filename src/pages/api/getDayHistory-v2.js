@@ -118,7 +118,7 @@ async function getDayHistory(tradingsymbol,options={}){
 
 export default async function handler(req, res) {
   
-  let {instruments, interval,defaultExchange}  = req.query
+  let {instruments, interval,exchange}  = req.query
 
   instruments = instruments
     .split(",")
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
   
   let history  =await getDayHistory(instruments[0],{
     interval,
-    defaultExchange
+    defaultExchange:exchange
   })
   res.status(200).json({history})
 }

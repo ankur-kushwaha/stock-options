@@ -47,7 +47,7 @@ export default function useZerodha(){
     console.log('Creating order...',url);
     if(dev){
       
-      url = url;//+"&variety=amo";
+      url = url;+"&variety=amo";
       let res = await fetch(url).then(res=>res.json());
       if(res.error?.message){
         alert(res.error?.message)
@@ -76,11 +76,11 @@ export default function useZerodha(){
     return fetch('/api/logout')
   }
 
-  async function getHistory(targetTradingsymbol,{interval}={}){
+  async function getHistory(targetTradingsymbol,{interval,exchange}={}){
     if(dev){
       return await getMockHistory();
     }else{
-      return await fetch(`/api/getDayHistory-v2?instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
+      return await fetch(`/api/getDayHistory-v2?exchange=${exchange}&instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
         .then(res=>res.json())
     }
   }

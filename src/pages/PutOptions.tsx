@@ -10,6 +10,7 @@ import useZerodha from '../helpers/useZerodha';
 import useNotifications from '../helpers/useNotificaiton';
 import date from 'date-and-time';
 import { useRouter } from 'next/router'
+import { postData } from '../helpers/fetch';
 
 
 type Option={
@@ -22,25 +23,67 @@ export default function options2({
   profile,
   stockQuote,
   type,
+  accessToken,
   optionQuotes
 }) {
 
 
   const router = useRouter()
   let {query}  = router;
-  let {expiry} = query;
 
   React.useEffect(()=>{
-    console.log(optionQuotes)
+    console.log(accessToken)
   },[])
 
+  async function fetchMargin({leg1,leg2}){
+    let res = await postData('/api/getMargin', [
+      {
+        "exchange": "NFO",
+        "tradingsymbol": leg1.tradingsymbol,
+        "transaction_type": "SELL",
+        "variety": "regular",
+        "product": "NRML",
+        "order_type": "LIMIT",
+        "quantity": leg1.quantity,
+        "price": leg1.price,
+        "trigger_price": 0
+      },
+      {
+        "exchange": "NFO",
+        "tradingsymbol": leg2.tradingsymbol,
+        "transaction_type": "BUY",
+        "variety": "regular",
+        "product": "NRML",
+        "order_type": "LIMIT",
+        "quantity": leg2.quantity,
+        "price": leg2.quantity,
+        "trigger_price": 0
+      }
+    ],{
+      Authorization:'token ab8oz67ryftv7gx9:'+accessToken,
+      'X-Kite-Version':3
+    })
+    
+    if(res.status=='success'){
+      return res.data.final;
+    }else{
+      log(res);
+    }
+  }
+
   const [state,setState ] = React.useState({
+    tradingsymbol:query.tradingsymbol,
     expiry:"",
     leg1:null,
-    leg2:null
+    margin:null,
+    netProfit:null,
+    netMargin:null,
+    returns:null,
+    leg2:null,
+    allMarginsData:[]
   });
 
-  const selectLegs = (row)=>(e)=>{
+  const selectLegs = (row)=>async (e)=>{
     let {leg1,leg2 } = state;
     if(e.target.checked){
       if(leg1){
@@ -55,15 +98,47 @@ export default function options2({
         leg2 = null
       }
     }
+    let margin;
+    if(leg1 && leg2){
+      margin = await fetchMargin({
+        leg1,leg2
+      })
+    }
+
+    let netProfit = leg2?.minInvestment - leg1?.minInvestment
+    let netMargin  = margin?.total;
+    let returns = netProfit/netMargin*100;
     
     setState({
       ...state,
       leg1,
+      netProfit,
+      netMargin,
+      returns,
       leg2
     })
   }
 
-  let columns = [
+  let columns2 = [{
+    name: 'option1',   
+    selector: 'option1', 
+  },{
+    name: 'option2',   
+    selector: 'option2', 
+  },{
+    name: 'margin',   
+    selector: 'margin', 
+  },{
+    name: 'netProfit',   
+    selector: 'netProfit', 
+  },{
+    name: 'returns',   
+    selector: 'returns', 
+  }]
+
+ 
+
+  let columns1 = [
     {
       name: 'Select',   
       selector: 'tradingsymbol', 
@@ -140,12 +215,11 @@ export default function options2({
     let futurePrice = price - ((timeValue*price/daysDiff)/100) + (stockPrice*0.01);
     let roi = (futurePrice - price) / price * 100;
 
-    
-    
     return {
       ...quote,
       ...option,
       buySellDiff,
+      quantity:option.lot_size,
       price,
       beChg,
       lotSize:option.lot_size,
@@ -161,10 +235,10 @@ export default function options2({
     }
   })
     .filter(item=>{
-      let cond =  item.price
-      && item.daysDiff < 60 
+      let cond = item.daysDiff < 60 
       && item.daysDiff>0
-      && item.buySellDiff < 0.1
+      // && item.price
+      // && item.buySellDiff < 0.1
     
       if(query.expiry?.length>0){
         cond = cond && item.expiry == query.expiry
@@ -173,11 +247,65 @@ export default function options2({
 
     }).sort((a,b)=>-a.minInvestment+b.minInvestment);
 
+  React.useEffect( ()=>{
+    let allMarginsData = []
+    async function run(){
+      let options = optionsData.sort((a,b)=>b.strike-a.strike);
+      console.log(options)
+      for (let i = 0; i < options.length; i++) {
+        const option1 = options[i];
+        for (let j = i+1; j < options.length; j++) {
+          const option2 = options[j];
+          let margin = await fetchMargin({
+            leg1:option1,
+            leg2:option2
+          })
+          let netProfit = (option1?.minInvestment - option2?.minInvestment)
+          let netMargin  = margin?.total;
+          let returns = netProfit/netMargin*100;
+          allMarginsData.push({
+            leg1:option1,
+            leg2:option2,
+            margin:netMargin,
+            netProfit,
+            returns
+          })
+          // console.log(margin)
+        }  
+      }
+      allMarginsData = allMarginsData.map(item=>{
+        return {
+          option1:item.leg1.tradingsymbol,
+          option2:item.leg2.tradingsymbol,
+          margin:item.margin,
+          returns:item.returns,
+          netProfit:item.netProfit
+        }
+      })
+
+      setState({
+        ...state,
+        allMarginsData
+      })
+    }
+    run();
+    
+  },[optionQuotes])
+
+  
+  
+
   const handleChange = (key)=>(e)=>{
     if(key=='expiry'){
       router.push({
         pathname: '',
         query: { ...query,expiry:e.target.value },
+      })
+    }
+    if(key=='tradingsymbol'){
+      router.push({
+        pathname: '',
+        query: { ...query,[key]:e.target.value },
       })
     }
     setState({
@@ -202,46 +330,76 @@ export default function options2({
               </div>
               <hr />
 
-              <div className="is-size-7">
-    Expiry
-              </div>
-              <div className="select is-fullwidth is-small mb-3">
-                <select value={query.expiry} onChange={handleChange('expiry')}>
-                  <option value="">Select Expiry</option>
-                  {Array.from(expiries).map(item=><option key={item}>{item}</option>)}
-                </select>
-              </div>
-            </div> 
+              <div>
+                <div className="is-fullwidth is-small mb-3">
+                  <div className="is-size-7">
+                    
+                  </div>
+                  <div className="field">
+                    <div className="control is-small">
+                      <input onBlur={handleChange('tradingsymbol')} defaultValue={state.tradingsymbol} className="input is-small" type={'text'} />
+                    </div>
+                  </div>
+                </div>
+              </div> 
+
+              <div>
+                <div className="is-size-7">
+                  Expiry
+                </div>
+                <div className="select is-fullwidth is-small mb-3">
+                  <select value={query.expiry} onChange={handleChange('expiry')}>
+                    <option value="">Select Expiry</option>
+                    {Array.from(expiries).map(item=><option key={item}>{item}</option>)}
+                  </select>
+                </div>
+              </div> 
+            </div>
           </div>
+          
           <div className="column">
 
             <div className="box">
               <div className="is-size-7">
               Leg1: {state.leg1?.strike},{state.leg1?.minInvestment}
               </div>
-              <hr />
               <div className="is-size-7">
               Leg2: {state.leg2?.strike},{state.leg2?.minInvestment}
               </div>
-              <hr />
+              
               <div className="is-size-7">
-              Diff: <Price>{Math.abs(state.leg2?.minInvestment - state.leg1?.minInvestment )}</Price>
+              Net Profit: <Price>{state.netProfit}</Price>
+              </div>
+              <div className="is-size-7">
+              Margin: <Price>{state.netMargin}</Price>
               </div>
 
-            </div>           
+              <div className="is-size-7">
+              Returns: <Price>{state.returns}</Price>
+              </div>
 
+            </div>  
           </div>
+            
+
         </div>
         
         <div className="columns">
           
           
-
           <div className="column">
-            <Table columns={columns} data={optionsData}/>
+            <Table columns={columns1} data={optionsData}/>
           </div>
           <div className="column">
-            <Table columns={columns} data={optionsData.reverse()}/>
+            <Table columns={columns1} data={optionsData.reverse()}/>
+          </div>
+
+          
+          
+        </div>
+        <div className="columns">
+          <div className="column">
+            <Table columns={columns2} data={state.allMarginsData}/>
           </div>
         </div>
 
@@ -251,11 +409,16 @@ export default function options2({
   </>
 }
 
+function log(...args){
+  console.log('PutOptions',args)
+}
+
 export async function getServerSideProps(ctx){
   let {req,query} = ctx;
   let {tradingsymbol,range=10,type='CE'} = query; // INFY
   let kc = await getKiteClient(req.cookies);
-  
+  let accessToken = req.cookies.accessToken;
+
   let stockCodeId = `NSE:${tradingsymbol}`
   if(tradingsymbol == 'NIFTY'){
     stockCodeId = 'NSE:NIFTY 50'
@@ -283,7 +446,7 @@ export async function getServerSideProps(ctx){
     }
   }
 
-  console.log(Object.values(options).map(option=>option.strike));
+  log(Object.values(options).map(option=>option.strike));
 
   let optionQuotes = await kc.getQuote(Object.values(options).map(item=>item.instrument_token));
 
@@ -291,9 +454,6 @@ export async function getServerSideProps(ctx){
     let quote = quotes[stockCode];
     delete quote.timestamp;
     delete quote.last_trade_time;
-
-    // let code = stockCode.split(":")[1]
-    // stockQuotes[code]=quote;
   }
   for(let stockCode in optionQuotes){
     let quote = optionQuotes[stockCode];
@@ -305,6 +465,7 @@ export async function getServerSideProps(ctx){
     props:{
       type,
       stockQuote,
+      accessToken,
       options,
       profile,
       optionQuotes

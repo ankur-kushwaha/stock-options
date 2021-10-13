@@ -1,27 +1,49 @@
 import React from 'react'
 import postData from '.';
-import useZerodha from '../helpers/useZerodha';
-import getTicks from '../helpers/getTicks';
+import useZerodha from './useZerodha';
+import getTicks from './getTicks';
+
+type Tick={
+  closePrice:number,
+  rawTick?:{
+    depth:{
+      buy:[{
+        price:number
+      }],
+      sell:[{
+        price:number
+      }]
+    }
+    
+  }
+}
 
 export default function useAutoTrade(config,userProfile){
 //   config.shouldRun = true;
   let [state,setState] = React.useState({
     orders: userProfile.orders?.filter(item=>item.tradingsymbol == config.tradingsymbol),
     closedOrders: userProfile.closedOrders?.filter(item=>item.tradingsymbol == config.tradingsymbol)||[],
-    closePrice:0,
     pendingOrders:userProfile.pendingOrders?.filter(item=>item.tradingsymbol == config.tradingsymbol)||[],
-    closePrice:200
+    closePrice:200,
+    signal:null,
+    intervalId:null
   });
   let {pendingOrders,orders,closedOrders} = state;
   let {createOrder2,getHistory} = useZerodha();
   let [history,setHistory] = React.useState([])
-  let [closePrice,setClosePrice] = React.useState(0);
+  let [tick,setTick] = React.useState<Tick>({
+    closePrice:null,
+    rawTick:null
+  });
+  const {closePrice,rawTick} = tick;
 
   
   async function fetchHistory(){
+    let stock = config.useStockPrice?config.stock:config.tradingsymbol;
 
-    let res = await getHistory(config.tradingsymbol,{
-      interval:config.interval
+    let res = await getHistory(stock,{
+      interval:config.interval,
+      exchange:config.useStockPrice?'NSE':"NFO"
     });
     setHistory(res.history);
   }
@@ -47,11 +69,15 @@ export default function useAutoTrade(config,userProfile){
       orderId:currOrder.order_id,
       timestamp:currOrder.order_timestamp,
       tradingsymbol:currOrder.tradingsymbol,
+      price:currOrder.price,
       averagePrice : currOrder.average_price,
       quantity : currOrder.quantity,
       status:currOrder.status||'COMPLETE',
       transactionType:currOrder.transaction_type,
       buyPrice:currOrder.price||currOrder.average_price,
+      sellPrice:null,
+      profit:null,
+      profitPct:null
     }
   }
 
@@ -73,9 +99,43 @@ export default function useAutoTrade(config,userProfile){
     return currOrder;
   }
 
+  async function smartOrder({
+    order
+  }){
+    let currKiteOrder;
+
+    let newPrice = order.price;
+    if(order.price < rawTick.depth.buy[0].price){
+      newPrice = rawTick.depth.buy[0].price+0.5;
+      let res = await postData('/api/modifyOrder',{
+        variety:"regular",
+        orderId:order.orderId,
+        params:{
+          price:newPrice
+        }
+      });
+    }
+
+    currKiteOrder = await getOrder(order.orderId);
+    
+    if(currKiteOrder.status == 'COMPLETE'){
+      return getMappedOrder(currKiteOrder)
+    }else if(!['REJECTED','CANCELLED'].includes(currKiteOrder.status)){
+      await sleep(1000);
+      return smartOrder(currKiteOrder)
+    }else{
+      console.log('Order',currKiteOrder)
+      throw new Error('Order failed');
+    }
+    
+  }
   async function createOrder({
     transactionType,
-    quantity
+    quantity,
+    smartMode
+  }:{transactionType:string,
+    quantity?:number,
+    smartMode?:boolean
   }){
 
     if(transactionType == 'BUY'){
@@ -84,7 +144,7 @@ export default function useAutoTrade(config,userProfile){
       console.log('selling stock...')
     }
 
-
+    
     let orderId = await createOrder2({
       transactionType,
       tradingsymbol:config.tradingsymbol,
@@ -96,14 +156,21 @@ export default function useAutoTrade(config,userProfile){
       console.log('order failed....');
       return ;
     }
+    
 
     let currKiteOrder = await getOrder(orderId);
+    
     if(!currKiteOrder){
       console.log('order failed....');
       return;
     }
 
-    return getMappedOrder(currKiteOrder);
+    let mappedOrder =  getMappedOrder(currKiteOrder);
+    if(smartMode){
+      return (await smartOrder({order:mappedOrder}))
+    }
+
+    return mappedOrder
   }
 
   React.useEffect(()=>{
@@ -113,7 +180,10 @@ export default function useAutoTrade(config,userProfile){
 
         let closePrice = (tick.depth.buy[0].price+tick.depth.sell[0].price)/2 || tick.last_price;
         // console.log('closePrice',closePrice);
-        setClosePrice(Number(closePrice.toFixed(1)));
+        setTick({
+          rawTick:tick,
+          closePrice:Number(closePrice.toFixed(1))
+        });
       });
     }
     
@@ -246,7 +316,10 @@ export default function useAutoTrade(config,userProfile){
     orders,
     pendingOrders,
     closedOrders
-  }={})=>{
+  }:{newConfig?:any,
+    orders?:any,
+    pendingOrders?:any,
+    closedOrders?:any}={})=>{
     
     let data = {
       userId:userProfile.user_id,
@@ -446,7 +519,8 @@ export default function useAutoTrade(config,userProfile){
     let orders = [...state.orders];
     let pendingOrders = [...state.pendingOrders]
     let buyOrder = await createOrder({
-      transactionType:"BUY"
+      transactionType:"BUY",
+      smartMode:true
     });
     if(buyOrder){
       

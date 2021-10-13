@@ -76,16 +76,23 @@ export default function BuySellConfig({config,onUpdate,triggerNow,importStock}){
                 }
                 <button className="is-fullwidth is-small mt-3 button " onClick={triggerNow}>Trigger Now</button>
               </div>
-
             </div>
-
           </div>
-
 
           <div className="box">
             <ConfigItem title="Tradingsymbol" value={state.tradingsymbol} onChange={handleChange('tradingsymbol','text')}/>
             <button className="button is-small is-pulled-right" onClick={handleSymbolChange}>Update Stock</button>
             <button className="button mr-2 is-small is-pulled-right" onClick={importStock}>Import Stock</button>
+            <label className="checkbox">
+              <input checked={state.useStockPrice} type="checkbox" onChange={handleChange('useStockPrice')}/>
+          &nbsp;
+              <span className="is-size-7">
+            Use Stock Price
+              </span>
+            </label>
+            {state.useStockPrice &&
+            <ConfigItem title="Stock" value={state.stock} onChange={handleChange('stock','text')}/>
+            }
             <div className="is-clearfix"></div>
           </div>
 

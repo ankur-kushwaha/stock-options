@@ -12,7 +12,8 @@ import useAutoTrade from '../helpers/useAutoTrade';
 import dbConnect from '../middleware/mongodb'
 
 export default function BuySell({
-  userProfile
+  userProfile,
+  stock
 }) {
   // const { addToast } = useToasts()
 
@@ -23,7 +24,7 @@ export default function BuySell({
   let defaultConfig = {
     ...userProfile.configs,
     tradingsymbol,
-
+    stock,
     maxOrder: userProfile.configs?.maxOrder || 5,
     minTarget:  userProfile.configs?.minTarget || 5,
     quantity : userProfile.configs?.quantity || 100,
@@ -284,11 +285,16 @@ export async function getServerSideProps(ctx) {
   userProfile.orders = session?.data.orders||[]
   userProfile.pendingOrders = session?.data.pendingOrders||[]
   userProfile.closedOrders = session?.data.closedOrders||[];
-  
+  let stock = /([A-Z]*)\d.*/.exec(tradingsymbol)[1];
+
+  if(stock=='NIFTY'){
+    stock = 'NIFTY 50'
+  }
 
   return {
     props:{
-      userProfile
+      userProfile,
+      stock
     }
   }
 

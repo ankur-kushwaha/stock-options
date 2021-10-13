@@ -1,5 +1,10 @@
+const { default: dbConnect } = require('../middleware/mongodb');
 const Instrument = require('../models/instrument');
 const User = require('../models/user');
+
+function log(...args){
+  console.log('dbHelper',...args)
+}
 
 async function fetchOptions({
   instrumentType='CE',
@@ -8,7 +13,7 @@ async function fetchOptions({
 }) {
 
   
-
+  await dbConnect()
   let query;
   if(Array.isArray(tradingsymbol)){
     tradingsymbol = tradingsymbol.map(item=>{
@@ -28,7 +33,7 @@ async function fetchOptions({
     query.expiry = expiry;
   }
 
-  console.log(query);
+  log(query);
   
   let options = await Instrument.find(query).exec();
 
@@ -53,7 +58,7 @@ async function fetchStock({
 
 
   let stock = await Instrument.findOne({ tradingsymbol: tradingsymbol, exchange: "NSE" }).exec();
-  console.log({ name: tradingsymbol });
+  log({ name: tradingsymbol });
   return stock;
 }
 
