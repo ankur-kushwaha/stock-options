@@ -40,10 +40,11 @@ export default function useZerodha(){
   }
 
   const createOrder2 = async ({
-    transactionType,tradingsymbol,quantity,price
+    transactionType,tradingsymbol,quantity,price,
+    exchange
   }) => {
     
-    let url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}`;
+    let url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}&exchange=${exchange}`;
     console.log('Creating order...',url);
     if(dev){
       

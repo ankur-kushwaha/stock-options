@@ -11,7 +11,7 @@ let smart_api = new SmartAPI({
 async function createOrderAngelOne(req,res){
   await smart_api.generateSession("A631449", "Kushwaha1@")
 
-  let {client,tradingsymbol,quantity,price,transactionType,variety} = req.query;
+  let {client,tradingsymbol,quantity,price,transactionType,variety,exchange} = req.query;
   
   let response = await smart_api.placeOrder({
     "exchange":"NSE",
@@ -36,7 +36,7 @@ export default async function createOrder(req, res) {
         
   let kt = await getKiteClient(req.cookies);
 
-  let {client,tradingsymbol,quantity,price,transactionType,variety} = req.query;
+  let {client,tradingsymbol,quantity,price,transactionType,variety,exchange} = req.query;
 
   if(client == 'angelOne'){
     return await createOrderAngelOne(req,res)
@@ -45,14 +45,14 @@ export default async function createOrder(req, res) {
   let reqData;
   
   reqData={
-    exchange:"NFO",
+    exchange:exchange||"NFO",
     tradingsymbol,
     transaction_type:transactionType,
     validity:'DAY',
     quantity, 
     order_type:"LIMIT",
     price,
-    product:"NRML"
+    product:exchange=='NSE'?'CNC':"NRML"
   }
 
   if(price == 'MARKET'){
