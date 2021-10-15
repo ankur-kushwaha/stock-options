@@ -1,7 +1,7 @@
 import React from 'react'
 import Header from '../components/Header'
 import Sidebar from '../components/Sidebar'
-import Table from '../components/Table';
+import Table, { Column } from '../components/Table';
 import { fetchOptions } from '../helpers/dbHelper';
 // import getTicks from '../helpers/getTicks';
 import { getKiteClient } from '../helpers/kiteConnect';
@@ -20,146 +20,131 @@ export default function options2({
   optionQuotes
 }) {
 
+  let {push,query} = useRouter()
+
   const [state,setState ] = React.useState({
-    expiry:""
+    expiry:"",
+    ...query
   });
 
-  let columns = [
-    {
-      name: 'tradingsymbol',   
-      selector: 'tradingsymbol',    
-      cell:row=><a href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} target="_blank" rel="noreferrer" >{row.tradingsymbol}</a>
-    },
-    {
-      name: 'expiry',   
-      selector: 'expiry',    
-    },
-    {
-      name: 'strike',   
-      selector: 'strike',    
-    },
-    {
-      name: 'price',   
-      selector: 'price',    
-    },
-    {
-      name: 'breakeven',   
-      selector: 'breakeven',    
-      cell:row=><div>
-        {row.breakeven}<br/>
-        (<Price threshold={0.7} reverseColoring>{row.beChg}</Price>)
-      </div>
+  // let columns = [
+  //   {
+  //     name: 'tradingsymbol',   
+  //     selector: 'tradingsymbol',    
+  //     cell:row=><a href={`/BuySell?tradingsymbol=${row.tradingsymbol}`} target="_blank" rel="noreferrer" >{row.tradingsymbol}</a>
+  //   },
+  //   {
+  //     name: 'expiry',   
+  //     selector: 'expiry',    
+  //   },
+  //   {
+  //     name: 'strike',   
+  //     selector: 'strike',    
+  //   },
+  //   {
+  //     name: 'price',   
+  //     selector: 'price',    
+  //   },
+  //   {
+  //     name: 'breakeven',   
+  //     selector: 'breakeven',    
+  //     cell:row=><div>
+  //       {row.breakeven}<br/>
+  //       (<Price threshold={0.7} reverseColoring>{row.beChg}</Price>)
+  //     </div>
       
-    },{
-      name: 'lotSize',   
-      selector: 'lotSize',    
-    },{
-      name: 'minInvestment',   
-      selector: 'minInvestment',   
-      cell:row=><Price>{row.minInvestment}</Price> 
-    },{
-      name: 'roi',   
-      selector: 'roi',
-      cell:row=><div>
-        <Price>{
-          row.futurePrice
-        }</Price>
-        <br/>
-        (<Price small>{row.roi}</Price>%)
-      </div>
-    },{
-      name: 'timeValue',   
-      selector: 'timeValue',    
-      cell:row=><div>
-        <Price reverseColoring>{
-          row.timeValue
-        }</Price>
-        <br/>
-        (<Price reverseColoring>{row.timeValue2}</Price>)
-      </div>
-    },{
-      name: 'intrinsicValue',   
-      selector: 'intrinsicValueAmt',   
-      cell:row=><div><Price>{row.intrinsicValueAmt}</Price><br/>(<Price>{row.intrinsicValuePct}</Price>)</div>
-    }
-  ].map(item=>{
-    item.sortable = true;
-    return item;
-  });
+  //   },{
+  //     name: 'lotSize',   
+  //     selector: 'lotSize',    
+  //   },{
+  //     name: 'minInvestment',   
+  //     selector: 'minInvestment',   
+  //     cell:row=><Price>{row.minInvestment}</Price> 
+  //   },{
+  //     name: 'roi',   
+  //     selector: 'roi',
+  //     cell:row=><div>
+  //       <Price>{
+  //         row.futurePrice
+  //       }</Price>
+  //       <br/>
+  //       (<Price small>{row.roi}</Price>%)
+  //     </div>
+  //   },{
+  //     name: 'timeValue',   
+  //     selector: 'timeValue',    
+  //     cell:row=><div>
+  //       <Price reverseColoring>{
+  //         row.timeValue
+  //       }</Price>
+  //       <br/>
+  //       (<Price reverseColoring>{row.timeValue2}</Price>)
+  //     </div>
+  //   },{
+  //     name: 'intrinsicValue',   
+  //     selector: 'intrinsicValueAmt',   
+  //     cell:row=><div><Price>{row.intrinsicValueAmt}</Price><br/>(<Price>{row.intrinsicValuePct}</Price>)</div>
+  //   }
+  // ].map(item=>{
+  //   item.sortable = true;
+  //   return item;
+  // });
 
   let expiries = new Set();
 
   let optionsData = Object.values(optionQuotes).map(quote=>{
-    let price = (quote.depth.sell[0].price) || quote.last_price;
-    let stockPrice = stockQuote.last_price
-    
-    let option = options[quote.instrument_token]
-    
+    let option = options[quote.instrument_token];
     expiries.add(option.expiry);
-
-    let breakeven = option.strike+price;
-    if(type=='PE'){
-      breakeven = option.strike - price;
-    }
-    let beChg =(breakeven-stockPrice)/stockPrice*100;
-
-    let minInvestment = price * option.lot_size;
-    let today = new Date();
-    let expiryDate  = date.parse(option.expiry,'YYYY-MM-DD') //2025-12-24',
-
-    
-    let daysDiff = Math.ceil((expiryDate-today) / (1000 * 60 * 60 * 24)) 
-
-    let intrinsicValue = Math.max(stockPrice-option.strike,0);
-    let intrinsicValueAmt = intrinsicValue * option.lot_size;
-    let intrinsicValuePct = intrinsicValue/price*100;
-    let timeValue  = (breakeven-stockPrice)*option.lot_size;
-    let timeValue2  = (breakeven-stockPrice)/price*100;
-
-    if(type=='PE'){
-      timeValue = Math.min(price,(price - (option.strike - stockPrice)))* option.lot_size;
-      timeValue2 = (price - (option.strike - stockPrice))/price*100
-      minInvestment = timeValue
-    }
-
-    let futurePrice = price - ((timeValue*price/daysDiff)/100) + (stockPrice*0.01);
-    let roi = (futurePrice - price) / price * 100;
-
-    
-    
+    let stockPrice = stockQuote.last_price
+    let bidPrice = quote.depth.buy[0].price;
+    let offerPrice = quote.depth.sell[0].price;
     return {
       ...quote,
       ...option,
-      price,
-      beChg,
-      lotSize:option.lot_size,
-      timeValue,
-      intrinsicValueAmt,
-      intrinsicValuePct,
-      timeValue2,
-      futurePrice,
-      roi,
-      minInvestment,
-      daysDiff,
-      breakeven
+      stockPrice,
+      bidPrice,
+      offerPrice,
+      price:state.transactionType == 'buy'?offerPrice:bidPrice
     }
   })
-    .filter(item=>{
-      let cond =  item.price
-      && item.daysDiff < 60 
-      && item.daysDiff>0
-    
-      if(state.expiry.length>0){
-        cond = cond && item.expiry ==state.expiry
-      }
-      return cond;
+    .filter(item=>item.expiry == state.expiry||state.expiry=='')
+    .map(item=>{
+      let breakeven,breakevenChg,timeValue;
 
-    }).sort((a,b)=>-a.breakeven+b.breakeven);
+      if(item.tradingsymbol.endsWith('CE')){
+        breakeven = item.strike + item.price;
+        if(state.transactionType == 'buy'){
+          timeValue = item.lot_size * Math.max(item.price,item.stockPrice-item.strike-item.price)  
+        }
+      }else {
+        breakeven = item.strike - item.price;
+        if(state.transactionType == 'buy'){
+          timeValue = item.lot_size * Math.max(item.price,item.strike-item.stockPrice-item.price)  
+        }else{
+          timeValue = item.lot_size * Math.min(item.price,item.stockPrice - item.strike + item.price)  
+        }
+      }
+
+
+      return {
+        ...item,
+        timeValue,
+        breakeven,
+        breakevenChg
+      }
+    });
 
   const handleChange = (key)=>(e)=>{
     setState({
       ...state,
       [key]:e.target.value
+    });
+    push({
+      pathname: '/singleOption',
+      query: { 
+        ...query,
+        [key]:e.target.value
+      },
     })
   }
 
@@ -189,12 +174,42 @@ export default function options2({
                   {Array.from(expiries).map(item=><option key={item}>{item}</option>)}
                 </select>
               </div>
+              <div className="is-size-7">
+                Type
+              </div>
+              <div className="select is-fullwidth is-small mb-3">
+                <select value={state.type} onChange={handleChange('type')}>
+                  <option value="">Select Type</option>
+                  <option value="CE">CALL</option>
+                  <option value="PE">PUT</option>
+                </select>
+              </div>
+              <div className="is-size-7">
+                Transaction Type
+              </div>
+              <div className="select is-fullwidth is-small mb-3">
+                <select value={state.transactionType} onChange={handleChange('transactionType')}>
+                  <option value="">Select Type</option>
+                  <option value="buy">BUY</option>
+                  <option value="sell">SELL</option>
+                </select>
+              </div>
             </div>            
 
           </div>
 
           <div className="column">
-            <Table columns={columns} data={optionsData}/>
+            <Table data={optionsData}>
+              <Column selector="tradingsymbol"></Column>
+              <Column selector="strike"></Column>
+              <Column selector="expiry"></Column>
+              <Column selector="lot_size"></Column>
+              <Column selector="bidPrice"></Column>
+              <Column selector="offerPrice"></Column>
+              <Column selector="price"></Column>
+              <Column selector="breakeven"></Column>
+              <Column selector="timeValue"></Column>
+            </Table>
           </div>
         </div>
 
@@ -206,7 +221,8 @@ export default function options2({
 
 export async function getServerSideProps(ctx){
   let {req,query} = ctx;
-  let {tradingsymbol,range=10,type='CE'} = query; // INFY
+  let {tradingsymbol,range=10,type} = query; // INFY
+  type = type||'CE'
   let kc = await getKiteClient(req.cookies);
   
   let stockCodeId = `NSE:${tradingsymbol}`
@@ -230,13 +246,10 @@ export async function getServerSideProps(ctx){
   let lowerRange = stockPrice - (stockPrice*range/100)
 
   for(let option of Object.values(options)){
-    
     if( option.strike < lowerRange || option.strike > upperRange){
       delete options[option.instrument_token];
     }
   }
-
-  console.log(Object.values(options).map(option=>option.strike));
 
   let optionQuotes = await kc.getQuote(Object.values(options).map(item=>item.instrument_token));
 
@@ -244,9 +257,6 @@ export async function getServerSideProps(ctx){
     let quote = quotes[stockCode];
     delete quote.timestamp;
     delete quote.last_trade_time;
-
-    // let code = stockCode.split(":")[1]
-    // stockQuotes[code]=quote;
   }
   for(let stockCode in optionQuotes){
     let quote = optionQuotes[stockCode];
