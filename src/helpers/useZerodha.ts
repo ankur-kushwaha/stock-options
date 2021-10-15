@@ -99,7 +99,7 @@ function logout(){
   return fetch('/api/logout')
 }
 
-async function getHistory(targetTradingsymbol,{interval,exchange}:{interval:string,exchange:string}){
+async function getHistory(targetTradingsymbol,{interval,exchange}:{interval:string,exchange?:string}){
   if(dev){
     return await getMockHistory();
   }else{

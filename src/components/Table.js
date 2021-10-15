@@ -13,7 +13,7 @@ export {
   Column
 }
 
-export default function Table({columns,data,children,title}){
+export default function Table({columns,data,children=[],title=""}){
   let [sortOrder,setSortOrder ] = React.useState({
     key:columns?columns[0]?.selector:children[0].props.selector,
     order:true
