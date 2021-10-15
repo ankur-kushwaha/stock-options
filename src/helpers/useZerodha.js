@@ -1,6 +1,49 @@
 import { useToasts } from 'react-toast-notifications'
 const dev = false;//process.env.NODE_ENV !== 'production';
 
+let mockhistory=[{
+  "timestamp":"2021-09-06T09:15:00+05:30",
+  "close":210.07,
+  "open":210.07,
+  "high":210.07,
+  "low":210.07,
+  "signal":"RED"
+},{
+  "timestamp":"2021-09-06T09:15:00+05:30",
+  "close":210.07,
+  "open":210.07,
+  "high":210.07,
+  "low":210.07,
+  "signal":"RED"
+}];
+
+export const getMockHistory = async ()=>{
+  
+  let lastQuote = mockhistory[mockhistory.length-1];
+
+
+  let lastClose = mockhistory[0].close;
+  let nextClose = lastClose + ((Math.random()*10) * (Math.round(Math.random()) ? 1 : -1));
+  let nextOpen = lastClose + ((Math.random()*10) * (Math.round(Math.random()) ? 1 : -1));
+
+  mockhistory.push({
+    actual:lastQuote,
+    "timestamp":new Date().toString(),
+    "open":(lastQuote.high+lastQuote.close)/2,
+    "close":(lastQuote.high+lastQuote.close+lastQuote.open+lastQuote.low)/4,
+    low:Math.min(lastQuote.high,lastQuote.close,lastQuote.open,lastQuote.low),
+    high:Math.max(lastQuote.high,lastQuote.close,lastQuote.open,lastQuote.low),
+    "signal":nextClose-nextOpen>0?"GREEN":"RED"
+  }
+  )
+
+  console.log('Returning from mock',mockhistory[mockhistory.length-1])
+
+  return await Promise.resolve({
+    history:[...mockhistory]
+  });  
+}
+
 export default function useZerodha(){
   // const { addToast } = useToasts()
   const createOrder = ({
@@ -9,35 +52,9 @@ export default function useZerodha(){
     window.open(`/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}`, "_blank");
   }
 
-  let mockhistory=[{
-    "timestamp":"2021-09-06T09:15:00+05:30",
-    "close":210.07,
-    "open":210.07,
-    "signal":"RED"
-  }];
+ 
 
-  const getMockHistory = async ()=>{
-    let lastClose = mockhistory[0].close;
-    let nextClose = lastClose + ((Math.random()*10) * (Math.round(Math.random()) ? 1 : -1));
-    let nextOpen = lastClose + ((Math.random()*10) * (Math.round(Math.random()) ? 1 : -1));
-
-    mockhistory.push({
-      actual:{
-        close:nextClose
-      },
-      "timestamp":new Date().toString(),
-      "close":nextClose,
-      "open":nextOpen,
-      "signal":nextClose-nextOpen>0?"GREEN":"RED"
-    }
-    )
-
-    return await Promise.resolve({
-      history:[...mockhistory]
-    });
-
-    
-  }
+  
 
   const createOrder2 = async ({
     transactionType,tradingsymbol,quantity,price,
@@ -48,7 +65,7 @@ export default function useZerodha(){
     console.log('Creating order...',url);
     if(dev){
       
-      url = url;+"&variety=amo";
+      url = url+"&variety=amo";
       let res = await fetch(url).then(res=>res.json());
       if(res.error?.message){
         alert(res.error?.message)

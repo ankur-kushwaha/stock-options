@@ -14,8 +14,6 @@ export default function holdings({
   positions,
   quotes}) {
 
-  
-
   let [tickerQuotes,setTickerQuotes] = React.useState(quotes);
 
   React.useEffect(()=>{
@@ -34,96 +32,71 @@ export default function holdings({
   // console.log('positions',positions);
 
   let totalProfit =0,
-    totalInvestment=0,
-    netCurrentValue=0,
     netExpiryPnl=0;
 
   let data = positions
     .map(item=>{
-      let stock = getStockCode(item.tradingsymbol);
-      let stockCode = stock.stockCode;
-      let strike  = stock.strike;
-      let stockPrice=0,stockPriceChg=0;
-      let currPrice,offerPrice,stockInstrumentToken,
-        optionInstrumentToken = item.instrument_token;
-      if(tickerQuotes){
-        stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token;
-        let stockQuote = tickerQuotes[stockInstrumentToken];
-        if(!stockQuote){
-          stockQuote = tickerQuotes[`NSE:${stockCode}`];
-        }
-        stockPrice = stockQuote.last_price;
-        stockPriceChg = stockQuote.change;
-        let optionTicker = tickerQuotes[item.instrument_token]
-        currPrice = optionTicker.depth.buy[0].price || optionTicker.last_price;
-        offerPrice = optionTicker.depth.sell[0].price  || optionTicker.last_price;
+      let {stockCode,strike} = getStockCode(item.tradingsymbol);
+      let stockInstrumentToken = quotes[`NSE:${stockCode}`].instrument_token;
 
-        
-      }
-    
-      let buyValue = item.buy_value;
-      let quantity = item.quantity;
-      let buyPrice = item.buy_price
-      let breakeven = strike+buyPrice;
-      let timeValue = Math.min(buyValue,((strike + currPrice) - stockPrice)*quantity); 
-      
-      
-      
-      let currValue = Number((currPrice * quantity).toFixed(2));
-      let pnl = (currPrice - buyPrice)*quantity;
-
-      
-      
-      
-      if(item.quantity < 0){
-        let sellPrice = item.sell_price;
-        pnl = -1*(sellPrice - offerPrice)*(quantity);
-        buyPrice = sellPrice;
-        breakeven =  strike - sellPrice
-      }
-
-      let breakevenDiff = stockPrice - breakeven;
-      let breakevenChg = breakevenDiff*100/stockPrice;
-      let expiryPnL = (breakevenDiff) * quantity;
-
-      if(item.quantity < 0){
-        expiryPnL = -1* expiryPnL
-      }
-
-      if(item.quantity > 0 && item.tradingsymbol.endsWith('PE')){
-        breakeven = 0
-        breakevenChg=0
-        expiryPnL = 0
-      }
-
-      
-
-      totalProfit += pnl;
-      totalInvestment += buyValue;
-      netCurrentValue += currValue;
-      netExpiryPnl += expiryPnL;
+      let stockQuote = tickerQuotes[stockInstrumentToken]||tickerQuotes[`NSE:${stockCode}`];
+      let optionTicker = tickerQuotes[item.instrument_token]
 
       return {
-        optionInstrumentToken,
-        pnl,
-        expiryPnL,
-        offerPrice,
-        buyValue,
-        bidPrice:currPrice,
-        buyPrice,
-        stockInstrumentToken,
-        currValue,
-        quantity,
-        stockPriceChg,
-        breakevenChg,
-        tradingsymbol:item.tradingsymbol,
-        stockCode, 
-        breakeven,
-        stockPrice,
-        timeValue
+        ...item,
+        strike,
+        bidPrice:optionTicker.depth.buy[0].price,
+        offerPrice:optionTicker.depth.sell[0].price,
+        price:item.average_price,
+        stockCode,
+        buyValue:item?.average_price * item.quantity,
+        stockPriceChg:stockQuote?.change,
+        stockPrice:stockQuote?.last_price,
       }
-    }).sort((a,b)=>a.pnl-b.pnl)
+    }).map(item=>{
+      let breakeven,breakevenChg,pnl,expiryPnL
+      if(item.tradingsymbol.endsWith("CE")){
+        breakeven = item.strike+item.average_price;
+        if(item.quantity>0){
+          pnl = (item.bidPrice - item.price) * item.quantity; 
+          breakevenChg = (item.stockPrice-breakeven)/item.stockPrice*100
+          expiryPnL = item.quantity * Math.max( -item.price, item.stockPrice - item.strike - item.price)
+        }else{
+          breakevenChg = (breakeven - item.stockPrice)/item.stockPrice*100
+          pnl = (item.price - item.offerPrice) * item.quantity * -1;
+          expiryPnL = item.quantity * (Math.max(item.price, item.strike - item.strike + item.price)) * -1
+        }
+      }else{
+        breakeven = item.strike - item.price;
+        if(item.quantity>0){
+          breakevenChg = (breakeven - item.stockPrice) / item.stockPrice *100
+          pnl = item.quantity * (item.offerPrice - item.price);
+          expiryPnL = item.quantity * (Math.max(-item.price , (item.strike - item.stockPrice-item.price)))
+        }else{
+          breakevenChg = (item.stockPrice - breakeven)/item.stockPrice*100
+          pnl = item.quantity * (item.price - item.offerPrice) * -1;
+          expiryPnL = item.quantity * (Math.min(item.price, item.stockPrice - item.strike + item.price)) * -1
+        }
+      }
 
+      netExpiryPnl += expiryPnL;
+      totalProfit += pnl
+
+      return{
+        ...item,
+        breakeven,
+        expiryPnL,
+        breakevenChg,
+        pnl
+      }
+    })
+  
+  let peData = data.filter(item=> {
+    return item.quantity<0
+  })
+  let ceData = data.filter(item=> {
+    return item.quantity>0
+  })
   
 
   let columns = [
@@ -134,7 +107,6 @@ export default function holdings({
       selector: 'tradingsymbol',
       sortable: true,
       cell:row=><a className={"has-text-link"} href={'/options2?tradingsymbols='+row.stockCode} target="_blank" rel="noreferrer">{row.tradingsymbol}</a>
-      
     },
     {
       name: 'Stock',
@@ -169,13 +141,6 @@ export default function holdings({
       sortable: true
     },
     {
-      name: 'TimeValue',
-      wrap:true,
-      selector: 'timeValue',
-      sortable: true,
-      cell:row=><Price>{row.timeValue}</Price>
-    },
-    {
       name: 'Bid Price',
       selector: 'bidPrice',wrap:true,
       sortable: true,
@@ -184,11 +149,11 @@ export default function holdings({
           transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.bidPrice)
         })}>{row.bidPrice}</a> <br/>
         (
-        <span className={"is-size-7 "+(row.bidPrice>row.buyPrice?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.buyPrice)*100/row.buyPrice).toFixed(2)}%</span>)</div>
+        <span className={"is-size-7 "+(row.bidPrice>row.price?'has-text-success':'has-text-danger')}>{((row.bidPrice-row.price)*100/row.price).toFixed(2)}%</span>)</div>
     },
     {
       name: 'Buy/Sell Price',wrap:true,
-      selector: 'buyPrice',
+      selector: 'price',
       sortable: true
     },
     {
@@ -198,7 +163,7 @@ export default function holdings({
       cell:row=><div><a className="has-text-link	" onClick={createOrder({
         transactionType:"SELL",tradingsymbol:row.tradingsymbol,quantity:row.quantity,price:(row.offerPrice-0.5)
       })}>{row.offerPrice}</a>  <br/>
-      (<Price small>{(row.offerPrice-row.buyPrice)*100/row.buyPrice}</Price>)
+      (<Price small>{(row.offerPrice-row.price)*100/row.price}</Price>)
       </div>
     },
 
@@ -227,12 +192,6 @@ export default function holdings({
         <article className="message is-info">
           <div className="message-body">
             <div>
-          Net Investment: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalInvestment, { code: 'INR' })}</span>
-            </div>
-            <div>
-          Current Value: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(netCurrentValue, { code: 'INR' })}</span>
-            </div>
-            <div>
           Net PnL: <span className={(totalProfit>0)?'has-text-success':'has-text-danger'}>{currencyFormatter.format(totalProfit, { code: 'INR' })}</span>
             </div>
             <div>
@@ -247,13 +206,8 @@ export default function holdings({
       </div>
 
       <div className="container mt-5">
-
-        <div className="columns">
-   
-          <div className="column">
-            <Table data={data} columns={columns} />
-          </div>
-        </div>
+        <Table data={ceData} columns={columns} />
+        <Table data={peData} columns={columns} />
       </div> 
       
     </div>

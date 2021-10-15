@@ -18,7 +18,7 @@ function ConfigItem({
   </div></>)
 }
 
-export default function BuySellConfig({config,onUpdate,triggerNow,importStock}){
+export default function BuySellConfig({config={},onUpdate,triggerNow=null,importStock=null}){
    
   const [state,setState] = React.useState({
     ...config,

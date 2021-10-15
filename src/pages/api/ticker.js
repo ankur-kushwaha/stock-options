@@ -18,7 +18,7 @@ const ioHandler = (req, res) => {
       socket.on('init',async data=>{
         let tokens = data.instrumentTokens;
         ticker = await getKiteTickerClient(socket.handshake.headers.cookie);
-        
+        ticker.autoReconnect(true);
         ticker.connect();
         
         ticker.on("connect", function subscribe() {

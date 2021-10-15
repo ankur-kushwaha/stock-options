@@ -2,6 +2,7 @@ import React from 'react'
 import postData from '.';
 import useZerodha from './useZerodha';
 import getTicks from './getTicks';
+import {getMockHistory} from './useZerodha'
 
 type Tick={
   closePrice:number,
@@ -15,6 +16,84 @@ type Tick={
       }]
     }
     
+  }
+}
+
+async function getHistory(targetTradingsymbol,{interval,exchange}:{interval?:string,exchange?:string}={}){
+  let dev= true;
+  if(dev){
+    return await getMockHistory();
+  }else{
+    return await fetch(`/api/getDayHistory-v2?exchange=${exchange}&instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
+      .then(res=>res.json())
+  }
+}
+
+export function useAutoTrade2({
+  exchange,
+  tradingsymbol,
+  interval
+},{
+  buy,
+  sell
+}){
+
+  let intervalId=React.useRef(null),
+    signal=React.useRef(null),
+    history=React.useRef(null);
+
+  async function fetchHistory(){
+    let res = await getHistory(tradingsymbol,{
+      interval,
+      exchange
+    });
+    
+    if(res.history.length>history.current?.length){
+      console.log('History updated')
+      return res.history[res.history.length-1];
+    }
+    console.log('Same history')
+    history.current = res.history;
+    return null;
+  }
+
+  async function startTrading(){
+    let quote = await fetchHistory();
+
+    if(!quote){
+      return;
+    }
+
+    console.log(quote)
+    
+    if(signal.current && signal.current != quote.signal){
+      if(quote.signal == 'GREEN' && quote.low == quote.open){
+        buy({
+          tick:quote
+        });
+      }
+
+      else if(quote.signal == 'RED' && quote.high == quote.close){
+        sell({
+          tick:quote
+        });
+      }
+    }
+    signal.current = quote.signal
+  }
+
+  function start(){
+    let id = setInterval(startTrading,5000);
+    intervalId.current = id;
+  }
+
+  function stop(){
+    clearInterval(intervalId.current)
+  }
+
+  return {
+    start,
+    stop
   }
 }
 

@@ -20,7 +20,8 @@ export default function SmartTrade({tradingsymbol}){
     exchange:"NSE",
     quantity:0,
     shouldLoop:false,
-    currOrder:null
+    currOrder:null,
+    increment:0.5
   });
 
   // console.log(state,query.tradingsymbol);
@@ -71,10 +72,10 @@ export default function SmartTrade({tradingsymbol}){
           }
         
           if(topBuyPrice > currOrder.price){
-            buyPrice = topBuyPrice + 0.5
+            buyPrice = topBuyPrice + state.increment
           }else{
             let secondTopBuyPrice = response.quotes[instruments].depth.buy[1].price;
-            buyPrice = secondTopBuyPrice + 0.5
+            buyPrice = secondTopBuyPrice + state.increment
           }
         }
         console.log(`topBuyPrice: ${topBuyPrice},buyPrice: ${buyPrice}`)
@@ -163,6 +164,14 @@ export default function SmartTrade({tradingsymbol}){
           <div className="field">
             <div className="control is-small">
               <input onChange={handleChange('quantity')} value={state.quantity} className="input is-small" type={'text'} />
+            </div>
+          </div>
+          <div className="is-size-7">
+            Increment
+          </div>
+          <div className="field">
+            <div className="control is-small">
+              <input onChange={handleChange('increment')} value={state.increment} className="input is-small" type={'text'} />
             </div>
           </div>
 

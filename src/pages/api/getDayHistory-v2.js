@@ -1,6 +1,7 @@
 let { SmartAPI } = require("smartapi-javascript");
 const AngelInstrument = require('../../models/angelInstruments');
 const ZerodhaInstrument = require('../../models/instrument');
+import dbConnect from '../../middleware/mongodb'
 import date from 'date-and-time';
 
 
@@ -34,7 +35,7 @@ export async function getCandleData({
     fromDate = date.addDays(today,-range)
   }
   
-
+  await dbConnect();
   console.log({'tradingsymbol':tradingsymbol,'exchange':defaultExchange})
   let zerodhaInstrument = await ZerodhaInstrument.findOne({'tradingsymbol':tradingsymbol,'exchange':defaultExchange});
   let token = zerodhaInstrument.toObject().exchange_token;
@@ -52,7 +53,6 @@ export async function getCandleData({
   }
   let response;
   try{
-
     response = await smart_api.getCandleData(params)
   }catch(e){
     console.log(e);
@@ -61,7 +61,6 @@ export async function getCandleData({
     console.log('res',response)
     console.log(tradingsymbol,params,response);
     throw new Error('No history response from server');
-    // data=[]
   }
   let data = response.data;
   return {
@@ -97,6 +96,8 @@ async function getDayHistory(tradingsymbol,options={}){
   for(let item of data){
     let open = Number(((prev.open+prev.close)/2).toFixed(2));
     let close = Number(((item[1]+item[2]+item[3]+item[4])/4).toFixed(2));
+    let low = Math.min(item[1],item[2],item[3],item[4])
+    let high = Math.max(item[1],item[2],item[3],item[4])
 
     history.push({
       instrumentToken,
@@ -105,6 +106,8 @@ async function getDayHistory(tradingsymbol,options={}){
         open:item[1]
       },
       timestamp:item[0],
+      high,
+      low,
       close,
       open,
       signal : close-open>0?'GREEN':'RED'
