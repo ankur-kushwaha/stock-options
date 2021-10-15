@@ -53,7 +53,7 @@ export default function Orders({ userProfile,orders,userOrders }) {
     name:'value',
     selector:"value"
   },{
-    name:<button onClick={addAll}>Add all</button>,
+    name:<button className="button is-small"  onClick={addAll}>Add all</button>,
     selector:"variety",
     cell:row=><button onClick={handleSave(row)}>Add</button>
   }]
@@ -126,30 +126,34 @@ export default function Orders({ userProfile,orders,userOrders }) {
   return(
     <div> 
       <Header userProfile={userProfile}/>
-      <div className="container mt-5">
-        <Table title={"Orders Summary"} data={Object.values(processed)}>
-          <Column selector={"tradingsymbol"}></Column>
-          <Column selector={"quantity"}></Column>
-          <Column selector={"buyAvg"}></Column>
-          <Column selector={"sellAvg"}></Column>
-          <Column selector={"pnl"}></Column>
-        </Table>
+      <div className="container mt-5 px-4 py-2">
+        <div className="">
 
-        <Table title={"Orders Summary"} data={savedOrders}>
-          <Column selector={"order_timestamp"} name="order_timestamp">{(row)=>new Date(JSON.parse(row.order_timestamp)).toLocaleDateString()}</Column>
-          <Column selector="tradingsymbol"></Column>
-          <Column selector="transaction_type"></Column>
-          <Column selector="status"></Column>
-          <Column selector="quantity"></Column>
-          <Column selector="price"></Column>
-          <Column selector="value"></Column>
-          <Column name="Delete">
-            {row=><button onClick={handleDelete(row)}>Delete</button>}
-          </Column>
-        </Table>
+          <Table title={"Orders Summary"} data={Object.values(processed)}>
+            <Column selector={"tradingsymbol"}></Column>
+            <Column selector={"quantity"}></Column>
+            <Column selector={"buyAvg"}></Column>
+            <Column selector={"sellAvg"}></Column>
+            <Column selector={"pnl"}></Column>
+          </Table>
+        
 
-        <Table title={"Orders Summary"} columns={orderColumns} data={orders.sort((a,b)=>a.tradingsymbol-b.tradingsymbol)}>
-        </Table>
+          <Table title={"Saved orders"} data={savedOrders}>
+            <Column selector={"order_timestamp"} name="order_timestamp">{(row)=>new Date(JSON.parse(row.order_timestamp)).toLocaleDateString()}</Column>
+            <Column selector="tradingsymbol"></Column>
+            <Column selector="transaction_type"></Column>
+            <Column selector="status"></Column>
+            <Column selector="quantity"></Column>
+            <Column selector="price"></Column>
+            <Column selector="value"></Column>
+            <Column name="Delete">
+              {row=><button className="button" onClick={handleDelete(row)}>Delete</button>}
+            </Column>
+          </Table>
+
+          <Table title={"Kite orders"} columns={orderColumns} data={orders.sort((a,b)=>a.tradingsymbol-b.tradingsymbol)}>
+          </Table>
+        </div>
       </div>
     </div>
   )
@@ -173,7 +177,7 @@ export async function getServerSideProps(ctx) {
   }
   let orders = await kc.getOrders();
   orders = orders
-    // .filter(item=>item.status=='COMPLETE')
+    .filter(item=>item.status=='COMPLETE')
     .map(item=>{
       item.value = item.quantity*item.price;
       item.order_timestamp = JSON.stringify(item.order_timestamp)

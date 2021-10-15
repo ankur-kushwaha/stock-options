@@ -13,7 +13,7 @@ export {
   Column
 }
 
-export default function Table({columns,data,children}){
+export default function Table({columns,data,children,title}){
   let [sortOrder,setSortOrder ] = React.useState({
     key:columns?columns[0]?.selector:children[0].props.selector,
     order:true
@@ -48,6 +48,8 @@ export default function Table({columns,data,children}){
 
   return (
     <div className="table-container">
+      <h3 className="title is-5">{title}</h3>
+
       <table width={"100%"} className="table">
         <thead>
           <tr>{
