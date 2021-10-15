@@ -39,7 +39,7 @@ class Order{
   
     sellOrder: { orderId: any; timestamp: any; tradingsymbol: any; averagePrice: any; quantity: any; status: any; transactionType: any; price: any; };
     buyOrder: { orderId: any; timestamp: any; tradingsymbol: any; averagePrice: any; quantity: any; status: any; transactionType: any; price: any; };
-    tradingsymbol: String
+    tradingsymbol: string
   status: string;
     
   constructor({
