@@ -69,7 +69,14 @@ export async function getCandleData({
   };
 }
 
-async function getDayHistory(tradingsymbol,options={}){
+type Options={
+  daysAgo?:number,
+  interval:string,
+  range?:number,
+  defaultExchange:string
+}
+
+async function getDayHistory(tradingsymbol,options:Options){
   let {
     daysAgo=0,
     interval="ONE_MINUTE",
@@ -100,23 +107,27 @@ async function getDayHistory(tradingsymbol,options={}){
     let high = Math.max(item[1],item[2],item[3],item[4])
 
     history.push({
-      instrumentToken,
-      actual:{
-        close:item[4],
-        open:item[1]
-      },
       timestamp:item[0],
+      open,
       high,
       low,
       close,
-      open,
-      signal : close-open>0?'GREEN':'RED'
+      signal : close-open>0?'GREEN':'RED',
+      actual:{
+        open:item[1],
+        high:item[2],
+        low:item[3],
+        close:item[4],
+      },
     })
 
     prev = history[history.length-1];
   }
 
-  return history;
+  return {
+    history,
+    instrumentToken
+  };
 }
 
 export default async function handler(req, res) {
@@ -127,11 +138,11 @@ export default async function handler(req, res) {
     .split(",")
     .filter(item=>item.indexOf('BE')==-1)
   
-  let history  =await getDayHistory(instruments[0],{
+  let {history,instrumentToken}  =await getDayHistory(instruments[0],{
     interval,
     defaultExchange:exchange
   })
-  res.status(200).json({history})
+  res.status(200).json({instrumentToken,history})
 }
 
 

@@ -2,6 +2,7 @@ import { useToasts } from 'react-toast-notifications'
 const dev = false;//process.env.NODE_ENV !== 'production';
 
 let mockhistory=[{
+  actual:{},
   "timestamp":"2021-09-06T09:15:00+05:30",
   "close":210.07,
   "open":210.07,
@@ -55,59 +56,63 @@ export default function useZerodha(){
  
 
   
-
-  const createOrder2 = async ({
-    transactionType,tradingsymbol,quantity,price,
-    exchange
-  }) => {
+type CreateOrder2={
+  transactionType:string,tradingsymbol:string,quantity:number,price:number|string,
+    exchange?:string
+}
+  
+const createOrder2 = async ({
+  transactionType,tradingsymbol,quantity,price,
+  exchange
+}:CreateOrder2) => {
     
-    let url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}&exchange=${exchange}`;
-    console.log('Creating order...',url);
-    if(dev){
+  let url = `/api/createOrder?tradingsymbol=${tradingsymbol}&quantity=${quantity}&price=${price}&transactionType=${transactionType}&exchange=${exchange}`;
+  console.log('Creating order...',url);
+  if(dev){
       
-      url = url+"&variety=amo";
-      let res = await fetch(url).then(res=>res.json());
-      if(res.error?.message){
-        alert(res.error?.message)
-        // addToast(res.error?.message)
-      }
-      return res.data?.order_id;
-    }else{
-      let res = await fetch(url).then(res=>res.json());
-      if(res.error){
-        alert(res.error.message);
-        return ;
-      }
-      return res.data.order_id;
+    url = url+"&variety=amo";
+    let res = await fetch(url).then(res=>res.json());
+    if(res.error?.message){
+      alert(res.error?.message)
+      // addToast(res.error?.message)
     }
+    return res.data?.order_id;
+  }else{
+    let res = await fetch(url).then(res=>res.json());
+    if(res.error){
+      alert(res.error.message);
+      return ;
+    }
+    return res.data.order_id;
+  }
 
     
-    // return 123;
+  // return 123;
+}
+
+
+function login(){
+
+}
+
+function logout(){
+  return fetch('/api/logout')
+}
+
+async function getHistory(targetTradingsymbol,{interval,exchange}:{interval:string,exchange:string}){
+  if(dev){
+    return await getMockHistory();
+  }else{
+    return await fetch(`/api/getDayHistory-v2?exchange=${exchange}&instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
+      .then(res=>res.json())
   }
+}
 
-
-  function login(){
-
-  }
-
-  function logout(){
-    return fetch('/api/logout')
-  }
-
-  async function getHistory(targetTradingsymbol,{interval,exchange}={}){
-    if(dev){
-      return await getMockHistory();
-    }else{
-      return await fetch(`/api/getDayHistory-v2?exchange=${exchange}&instruments=${targetTradingsymbol}&interval=${interval||'ONE_MINUTE'}`)
-        .then(res=>res.json())
-    }
-  }
-
-  return {
-    getHistory,
-    createOrder,
-    createOrder2,
-    login,
-    logout
-  }
+return {
+  getHistory,
+  createOrder,
+  createOrder2,
+  login,
+  logout
+}
 }

@@ -67,13 +67,13 @@ export function useAutoTrade2({
     console.log(quote)
     
     if(signal.current && signal.current != quote.signal){
-      if(quote.signal == 'GREEN' && quote.low == quote.open){
+      if(quote.signal == 'GREEN'){
         buy({
           tick:quote
         });
       }
 
-      else if(quote.signal == 'RED' && quote.high == quote.close){
+      else if(quote.signal == 'RED'){
         sell({
           tick:quote
         });

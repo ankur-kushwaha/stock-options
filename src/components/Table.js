@@ -5,9 +5,17 @@ import Cell from './Cell';
 const BaseExpandedComponent = ({ data }) => <pre>
   {JSON.stringify(data, null, 2)}</pre>;
 
+function Column({changeSortOrder,item}){
+  return <th onClick={changeSortOrder(item.selector)} key={item.name}>{item.name}</th>
+}
 
-export default function Table({columns,data}){
+export {
+  Column
+}
+
+export default function Table({columns,data,children}){
   let [sortOrder,setSortOrder ] = React.useState({
+    key:columns?columns[0]?.selector:children[0].props.selector,
     order:true
   })
 
@@ -19,6 +27,9 @@ export default function Table({columns,data}){
   }
 
   data = data.sort((a,b)=>{
+    if(!sortOrder.key){
+      return -1;
+    }
     if(isNaN(Number(a[sortOrder.key]))){
       if(sortOrder.order){
         return (a[sortOrder.key])<(b[sortOrder.key])?1:-1
@@ -39,18 +50,24 @@ export default function Table({columns,data}){
     <div className="table-container">
       <table width={"100%"} className="table">
         <thead>
-          <tr>
-            {columns.map(item=><th onClick={changeSortOrder(item.selector)} key={item.selector}>{item.name}</th>)}
+          <tr>{
+            columns && columns.map(item=><th onClick={changeSortOrder(item.selector)} key={item.name}>{item.name}</th>)
+          }
+          {children && children.map((item,i)=><th onClick={changeSortOrder(item.props.selector)} key={i}>{item.props.name||item.props.selector}</th>)}
           </tr>
         </thead>
         <tbody>
           {data.map((item,i)=>
             <tr key={i}>
-              {columns.map((cell,j)=>
+              {columns && columns.map((cell,j)=>
                 <td key={j}>
                   {cell.cell?<cell.cell {...item}/>:
                     item[cell.selector]}
                 </td>)}
+
+              {children && children.map((cell,j)=><td key={j}>
+                {cell.props.children ?cell.props.children(item) : item[cell.props.selector]}
+              </td>)}
             </tr>
           )}
         </tbody>
