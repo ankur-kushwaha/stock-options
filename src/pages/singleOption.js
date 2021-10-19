@@ -91,30 +91,46 @@ export default function options2({
   // });
 
   let expiries = new Set();
-
-  let optionsData = Object.values(optionQuotes).map(quote=>{
-    let option = options[quote.instrument_token];
-    expiries.add(option.expiry);
-    let stockPrice = stockQuote.last_price
-    let bidPrice = quote.depth.buy[0].price;
-    let offerPrice = quote.depth.sell[0].price;
-    return {
-      ...quote,
-      ...option,
-      stockPrice,
-      bidPrice,
-      offerPrice,
-      price:state.transactionType == 'buy'?offerPrice:bidPrice
-    }
-  })
-    .filter(item=>item.expiry == state.expiry||state.expiry=='')
+  // console.log(optionQuotes);
+  let optionsData = Object.values(optionQuotes)
+    .map(quote=>{
+      let option = options[quote.instrument_token];
+      expiries.add(option.expiry);
+      let stockPrice = stockQuote.last_price
+      let bidPrice = quote.depth.buy[0].price||quote.last_price;
+      let offerPrice = quote.depth.sell[0].price||quote.last_price;
+      let price = state.transactionType == 'buy'?offerPrice:bidPrice
+      let value = price * option.lot_size;
+    
+      return {
+        ...quote,
+        ...option,
+        stockPrice,
+        bidPrice,
+        offerPrice,
+        price,
+        value
+      }
+    })
+    .filter(item=>{
+      console.log(item,state.expiry);
+      if(state.expiry == ''){
+        return true;
+      }else{
+        return new Date(state.expiry) >= new Date(item.expiry)
+      }
+    })
     .map(item=>{
       let breakeven,breakevenChg,timeValue;
+      
+      let expiryPnl;
 
       if(item.tradingsymbol.endsWith('CE')){
         breakeven = item.strike + item.price;
         if(state.transactionType == 'buy'){
           timeValue = item.lot_size * Math.max(item.price,item.stockPrice-item.strike-item.price)  
+        }else{
+          timeValue = item.lot_size * Math.min(item.price,-item.stockPrice+item.strike+item.price)  
         }
       }else {
         breakeven = item.strike - item.price;
@@ -122,15 +138,18 @@ export default function options2({
           timeValue = item.lot_size * Math.max(item.price,item.strike-item.stockPrice-item.price)  
         }else{
           timeValue = item.lot_size * Math.min(item.price,item.stockPrice - item.strike + item.price)  
+          expiryPnl = item.value-timeValue
         }
       }
 
+      expiryPnl = expiryPnl || item.value-timeValue 
 
       return {
         ...item,
         timeValue,
         breakeven,
-        breakevenChg
+        breakevenChg,
+        expiryPnl
       }
     });
 
@@ -207,8 +226,14 @@ export default function options2({
               <Column selector="bidPrice"></Column>
               <Column selector="offerPrice"></Column>
               <Column selector="price"></Column>
+              <Column selector="value"></Column>
               <Column selector="breakeven"></Column>
               <Column selector="timeValue"></Column>
+              <Column selector="expiryPnl">
+                {row=><div>{row.expiryPnl}<br/>
+                  {row.expiryPnl-row.value}
+                </div>}
+              </Column>
             </Table>
           </div>
         </div>

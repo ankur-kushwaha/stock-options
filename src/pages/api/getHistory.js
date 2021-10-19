@@ -49,8 +49,6 @@ export function processHistory(data){
     prev = history[history.length-1];
   }
 
-
-
   let dayHistory = history.reverse();
       
   let last = dayHistory[0];
@@ -98,36 +96,37 @@ export default async function handler(req, res) {
     
     if(!data || skipCache){
       console.log('Reading from server',instrument)
-      noData.push(instrument)
+      // noData.push(instrument)
       let candleData;
+
       try{
+      
         candleData = await getCandleData({
           daysAgo:0,
-          range:15,
+          range:20,
           defaultExchange:"NSE",
           tradingsymbol:instrument,
           interval:'ONE_DAY'
         });
-      }catch(e){
-        console.log(e);
-      }
-      // console.log(candleData)
-      if(candleData && candleData.data){
-        try{
+     
+        if(candleData && candleData.data){
+        
           history[instrument] = {
             name:instrument,
             date:today,
             ...processHistory(candleData.data)
           }
-        }catch(e){
-          console.log(e,candleData.data)
+
+          await InstrumentHistory.remove({ name:instrument });
+          await InstrumentHistory.create({
+            ...history[instrument],
+          })
+        }else{
+          console.log('history fetch failed',instrument)
         }
-        await InstrumentHistory.remove({ name:instrument });
-        await InstrumentHistory.create({
-          ...history[instrument],
-        })
-      }else{
-        console.log('history fetch failed',instrument)
+      }catch(e){
+        console.log(1,e);
+        noData.push(instrument)
       }
 
       

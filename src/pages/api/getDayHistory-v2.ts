@@ -55,7 +55,7 @@ export async function getCandleData({
   try{
     response = await smart_api.getCandleData(params)
   }catch(e){
-    console.log(e);
+    console.log('GetDayHistory',e);
   }
   if(!response || !response.data == null){
     console.log('res',response)

@@ -1,29 +1,23 @@
 import React from 'react'
 import { getKiteClient } from '../helpers/kiteConnect';
 // import getTicks from '../helpers/getTicks';
-
-import Table from '../components/Table';
+import Table, { Column } from '../components/Table';
 import Header from '../components/Header';
+import { useRouter } from 'next/router';
 import Price from '../components/Price';
-import schedule from 'node-schedule';
 
+export default function Holdings({holdings,profile}) {
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}   
-
-
-export default function Holdings({holdings,profile,quotes}) {
-
-  let instruments = holdings.map(item=>item.instrument_token);
+  // let instruments = holdings.map(item=>item.instrument_token);
   // let [marketDepth, setMarketDepth] = React.useState();
   let [history, setHistory] = React.useState({});
-  let [filters,setFilters] = React.useState({});
+  let {push, query} = useRouter()
 
+  let [filters,setFilters] = React.useState({
+    ...query
+  });
   
-  // console.log(holdings)
+  
   async function getHistory(instruments){
     return fetch('/api/getHistory?instruments='+instruments.join(",")).then(res=>res.json());
   }
@@ -32,96 +26,43 @@ export default function Holdings({holdings,profile,quotes}) {
     // getTicks(instruments,function(ticks){
     //   setMarketDepth(ticks);
     // });
-    console.log(profile)
 
     let historyData = await getHistory(holdings.map(item=>item.tradingsymbol));
     let out = historyData.history
     console.log(out)
     setHistory(out);
     
-  },[])
+  },[]);
 
-  // if(marketDepth){
-  //   for(let holding of holdings){
-
-  //     holding.last_price = marketDepth[holding.instrument_token].last_price
-  //     holding.day_change_percentage = marketDepth[holding.instrument_token].change
-
-  //   }
-  // }
-
-  let data = holdings.map(item=>{
-    if(history){
-      let itemHistory = history[item.tradingsymbol];
-      if(itemHistory){
-        item = {...item,...itemHistory}
-      }
-    }
-    return item;
-  }).filter(item=>{
-    if(filters.signal){
-      return item.signal == filters.signal
-    }
-    return item.signal
-  })
-
-  let columns = [
-    {
-      name: 'tradingsymbol',
-      selector: 'tradingsymbol',
-      cell:row=><a target="_blank" className="has-link-text" href={`https://kite.zerodha.com/chart/web/ciq/NSE/${row.tradingsymbol}/${row.instrument_token}`} rel="noreferrer">{row.tradingsymbol}</a>
-    },
-    {
-      name: 'trend',
-      selector: 'signal',
-    },
-    {
-      name: 'Reversed',
-      selector: 'lastReverse',
-    },
-    {
-      name: 'Day Change',
-      selector: 'day_change_percentage',
-      cell:row=><Price>{row.day_change_percentage}</Price>
-    },
-    {
-      name: '5D Change',
-      selector: 'day5Change',
-      cell:row=><Price>{row.day5Change}</Price>
-    },
-    {
-      name: '10D Change',
-      selector: 'day10Change',
-      cell:row=><Price>{row.day10Change}</Price>
-    },
-    {
-      name: 'Quantity',
-      selector: 'quantity',
-    },
-    
-    {
-      name: 'Buy Avg',
-      selector: 'average_price',
-      cell:row=><>{row.average_price?.toFixed(2)}</>
-    },
-    {
-      name: 'LTP',
-      selector: 'last_price',
-    },
-    {
-      name: 'PnL',
-      selector: 'pnl',
-      cell:row=><Price>{row.pnl}</Price>
-    }]
+  let data = holdings
     .map(item=>{
-      item.sortable =true;
-      return item;
+      if(history){
+        let itemHistory = history[item.tradingsymbol];
+      
+        if(itemHistory){
+          item = {...item,...itemHistory}
+        }
+      }
+      let value = item.average_price * item.quantity;
+      return {
+        ...item,
+        value
+      };
     })
+    .filter(item=>item.signal==filters.signal||filters.signal=='');
 
   const onChangeFilters=(key)=>(e)=>{
     setFilters({
       ...filters,
       [key]:e.target.value
+    });
+
+    push({
+      pathname: '/holdings',
+      query: { 
+        ...query,
+        [key]:e.target.value
+      },
     })
   }
 
@@ -130,25 +71,37 @@ export default function Holdings({holdings,profile,quotes}) {
       <Header userProfile = {profile}></Header>
       <div className="container mt-6">
         <div className="columns">
-          <div className="column is-3">
+          <div className="column is-12">
             <div className="filter-item box">
               <div className="is-size-7">
                 Trend
               </div>
               <div className="select is-small">
-                <select onChange={onChangeFilters('signal')}>
+                <select value={filters.signal} onChange={onChangeFilters('signal')}>
                   <option value="">Select</option>
                   <option>GREEN</option>
                   <option>RED</option>
                 </select>
               </div>
             </div>
-          </div>
-          <div className="column">
-            <Table data={data} columns ={columns}></Table>
-          </div>
-        
+          </div>        
         </div>
+
+        <Table data={data}>
+          <Column selector="tradingsymbol" name="Tradingsymbol">
+            {row=><a target="_blank" href={`https://kite.zerodha.com/chart/web/ciq/${row.exchange}/${row.tradingsymbol}/${row.instrument_token}`} rel="noreferrer">{row.tradingsymbol}</a>}
+          </Column>
+          <Column selector="quantity" name="Quantity"></Column>
+          <Column selector="average_price" name="BuyPrice"></Column>
+          <Column selector="last_price" name="LTP"></Column>
+          <Column selector="value" name="Investment"></Column>
+          <Column selector="pnl" name="PnL">{row=><Price>{row.pnl}</Price>}</Column>
+          <Column selector="signal" name="Signal"></Column>
+          <Column selector="lastReverse"></Column>
+          <Column selector="day_change">{row=><Price>{row.day_change}</Price>}</Column>
+          <Column selector="day5Change">{row=><Price>{row.day5Change}</Price>}</Column>
+          <Column selector="day10Change">{row=><Price>{row.day10Change}</Price>}</Column>
+        </Table>
       </div>
     </>
   )

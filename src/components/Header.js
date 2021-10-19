@@ -49,10 +49,7 @@ export default function Header({ userProfile={},tab=""}) {
         Position
               </a>
               <a className={"navbar-item is-size-7 "+(tab=='/multiOption'?'is-active':"")} href="/singleOption?tradingsymbol=NIFTY&range=5">
-        Single Options
-              </a>
-              <a className={"navbar-item is-size-7 "+(tab=='/multiOption'?'is-active':"")} href="/PutOptions?tradingsymbol=NIFTY&range=5&type=PE&expiry=2021-10-14">
-        Put Options
+        Options Analyzer
               </a>
               <a className={"navbar-item is-size-7 "} href="/holdings" rel="noreferrer">
         Holdings
