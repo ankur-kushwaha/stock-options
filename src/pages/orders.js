@@ -12,7 +12,7 @@ import {postData} from '../helpers/fetch'
 export default function Orders({ userProfile,orders,userOrders }) {
   
   
-
+  
 
   const [savedOrders,setSavedOrders] = React.useState(userOrders.orders);
   
@@ -55,7 +55,7 @@ export default function Orders({ userProfile,orders,userOrders }) {
   },{
     name:<button className="button is-small"  onClick={addAll}>Add all</button>,
     selector:"variety",
-    cell:row=><button onClick={handleSave(row)}>Add</button>
+    cell:row=><button className="button is-small" onClick={handleSave(row)}>Add</button>
   }]
 
   const handleSave = useCallback(
@@ -90,6 +90,10 @@ export default function Orders({ userProfile,orders,userOrders }) {
     [savedOrders],
   )
 
+  orders = orders.filter(item=>{
+    return !savedOrders.map(o=>o.order_id).includes(item.order_id)
+  })
+
   let processed = savedOrders.reduce((a,b)=>{
     
     if(a[b.tradingsymbol]){
@@ -119,7 +123,7 @@ export default function Orders({ userProfile,orders,userOrders }) {
       buyAvg:buyValue/buyQuantity,
       sellAvg:sellQuantity>0?sellValue/sellQuantity:"",
       quantity:buyQuantity-sellQuantity,
-      pnl:sellQuantity>0?buyValue-sellValue:""
+      pnl:sellQuantity&&buyQuantity?sellValue-buyValue:""
     }
   }
 
@@ -139,19 +143,19 @@ export default function Orders({ userProfile,orders,userOrders }) {
         
 
           <Table title={"Saved orders"} data={savedOrders}>
-            <Column selector={"order_timestamp"} name="order_timestamp">{(row)=>new Date(JSON.parse(row.order_timestamp)).toLocaleDateString()}</Column>
             <Column selector="tradingsymbol"></Column>
+            <Column selector={"order_timestamp"} name="order_timestamp">{(row)=>new Date(JSON.parse(row.order_timestamp)).toLocaleDateString()}</Column>
             <Column selector="transaction_type"></Column>
             <Column selector="status"></Column>
             <Column selector="quantity"></Column>
             <Column selector="price"></Column>
             <Column selector="value"></Column>
             <Column name="Delete">
-              {row=><button className="button" onClick={handleDelete(row)}>Delete</button>}
+              {row=><button className="button is-small" onClick={handleDelete(row)}>Delete</button>}
             </Column>
           </Table>
 
-          <Table title={"Kite orders"} columns={orderColumns} data={orders.sort((a,b)=>a.tradingsymbol-b.tradingsymbol)}>
+          <Table title={"Kite orders"} columns={orderColumns} data={orders}>
           </Table>
         </div>
       </div>
@@ -181,8 +185,9 @@ export async function getServerSideProps(ctx) {
     .map(item=>{
       item.value = item.quantity*item.price;
       item.order_timestamp = JSON.stringify(item.order_timestamp)
+      item.exchange_timestamp = JSON.stringify(item.exchange_timestamp)
       return item;
-    });
+    }).sort((a,b)=>a.tradingsymbol-b.tradingsymbol);
 
   await dbConnect();
 

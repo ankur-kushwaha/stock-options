@@ -14,6 +14,7 @@ export default function Holdings({holdings,profile}) {
   let {push, query} = useRouter()
 
   let [filters,setFilters] = React.useState({
+    signal:query.signal||"",
     ...query
   });
   
@@ -98,9 +99,9 @@ export default function Holdings({holdings,profile}) {
           <Column selector="pnl" name="PnL">{row=><Price>{row.pnl}</Price>}</Column>
           <Column selector="signal" name="Signal"></Column>
           <Column selector="lastReverse"></Column>
-          <Column selector="day_change">{row=><Price>{row.day_change}</Price>}</Column>
-          <Column selector="day5Change">{row=><Price>{row.day5Change}</Price>}</Column>
-          <Column selector="day10Change">{row=><Price>{row.day10Change}</Price>}</Column>
+          <Column selector="day_change">{row=><Price>{row.day_change_percentage}</Price>}</Column>
+          <Column selector="day5Change">{row=><Price threshold={5}>{row.day5Change}</Price>}</Column>
+          <Column selector="day10Change">{row=><Price threshold={10}>{row.day10Change}</Price>}</Column>
         </Table>
       </div>
     </>

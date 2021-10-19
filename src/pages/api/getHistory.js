@@ -64,6 +64,9 @@ export function processHistory(data){
       return item.signal == 'RED'
     }    
   });
+  if(lastReverse == -1){
+    lastReverse = dayHistory.length;
+  }
 
   let lastChange = (last.actual.close - day2.actual.close) / day2.actual.close * 100
   let day5Change = (last.actual.close - day5.actual.close) / day5.actual.close * 100
@@ -110,7 +113,6 @@ export default async function handler(req, res) {
         });
      
         if(candleData && candleData.data){
-        
           history[instrument] = {
             name:instrument,
             date:today,

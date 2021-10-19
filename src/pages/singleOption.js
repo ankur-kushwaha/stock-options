@@ -114,10 +114,12 @@ export default function options2({
     })
     .filter(item=>{
       console.log(item,state.expiry);
+      let today = new Date();
+      let cond = new Date(item.expiry) > today
       if(state.expiry == ''){
-        return true;
+        return cond;
       }else{
-        return new Date(state.expiry) >= new Date(item.expiry)
+        return cond && (new Date(state.expiry) >= new Date(item.expiry))
       }
     })
     .map(item=>{
