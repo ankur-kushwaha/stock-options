@@ -119,7 +119,7 @@ export default function options2({
       if(state.expiry == ''){
         return cond;
       }else{
-        return cond && (new Date(state.expiry) >= new Date(item.expiry))
+        return cond && (new Date(state.expiry) == new Date(item.expiry))
       }
     })
     .map(item=>{
