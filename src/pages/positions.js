@@ -54,7 +54,7 @@ export default function holdings({
         stockPrice:stockQuote?.last_price,
       }
     }).map(item=>{
-      let breakeven,breakevenChg,pnl,expiryPnL
+      let breakeven,breakevenChg,pnl,expiryPnL,strikeDiff
       if(item.tradingsymbol.endsWith("CE")){
         breakeven = item.strike+item.average_price;
         if(item.quantity>0){
@@ -72,13 +72,16 @@ export default function holdings({
           breakevenChg = (breakeven - item.stockPrice) / item.stockPrice *100
           pnl = item.quantity * (item.offerPrice - item.price);
           expiryPnL = item.quantity * (Math.max(-item.price , (item.strike - item.stockPrice-item.price)))
+          strikeDiff = (item.strike - item.stockPrice)/item.strike*100
         }else{
+          //PUT SELL
           breakevenChg = (item.stockPrice - breakeven)/item.stockPrice*100
           pnl = item.quantity * (item.price - item.offerPrice) * -1;
           expiryPnL = item.quantity * (Math.min(item.price, item.stockPrice - item.strike + item.price)) * -1
+          strikeDiff = (item.stockPrice - item.strike)/item.strike*100
         }
       }
-
+      
       netExpiryPnl += expiryPnL;
       totalProfit += pnl
 
@@ -87,7 +90,8 @@ export default function holdings({
         breakeven,
         expiryPnL,
         breakevenChg,
-        pnl
+        pnl,
+        strikeDiff
       }
     })
   
@@ -117,7 +121,7 @@ export default function holdings({
         target="_blank" rel="noreferrer">{row.stockCode}</a></>
     },
     {
-      name: 'Stock Price(Day Change)',
+      name: 'Stock Price',
       selector: 'stockPriceChg',
       sortable: true,
       cell:row=><div>{row.stockPrice}<br/>(<Price>{row.stockPriceChg}</Price>)</div>
@@ -128,6 +132,13 @@ export default function holdings({
       wrap:true,
       sortable: true,
       cell:row=><div>{row.breakeven}<br/>(<Price>{row.breakevenChg}</Price>)</div>
+    },
+    {
+      name: 'Strike',
+      selector: 'strike',
+      wrap:true,
+      sortable: true,
+      cell:row=><div>{row.strike}<br/>(<Price>{row.strikeDiff}</Price>)</div>
     },
     {
       name: 'Quantity',

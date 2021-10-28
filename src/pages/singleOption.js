@@ -115,7 +115,11 @@ export default function options2({
     .filter(item=>{
       console.log(item,state.expiry);
       let today = new Date();
-      let cond = new Date(item.expiry) > today
+      let maxDate = new Date()
+  
+      maxDate.setMonth(maxDate.getMonth() + 2);
+
+      let cond = new Date(item.expiry) > today && new Date(item.expiry) < maxDate && item.price > 0;
       if(state.expiry == ''){
         return cond;
       }else{
@@ -140,7 +144,7 @@ export default function options2({
           timeValue = item.lot_size * Math.max(item.price,item.strike-item.stockPrice-item.price)  
         }else{
           timeValue = item.lot_size * Math.min(item.price,item.stockPrice - item.strike + item.price)  
-          expiryPnl = item.value-timeValue
+          expiryPnl = item.value-timeValue 
         }
       }
 
