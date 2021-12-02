@@ -96,9 +96,9 @@ export default function options2({
     .map(quote=>{
       let option = options[quote.instrument_token];
       expiries.add(option.expiry);
-      let stockPrice = stockQuote.last_price
-      let bidPrice = quote.depth.buy[0].price||quote.last_price;
-      let offerPrice = quote.depth.sell[0].price||quote.last_price;
+      let stockPrice = stockQuote.last_price;
+      let bidPrice = quote.depth.buy[0].price;
+      let offerPrice = quote.depth.sell[0].price;
       let price = state.transactionType == 'buy'?offerPrice:bidPrice
       let value = price * option.lot_size;
     
@@ -113,17 +113,14 @@ export default function options2({
       }
     })
     .filter(item=>{
-      console.log(item,state.expiry);
       let today = new Date();
-      let maxDate = new Date()
-  
-      maxDate.setMonth(maxDate.getMonth() + 2);
 
-      let cond = new Date(item.expiry) > today && new Date(item.expiry) < maxDate && item.price > 0;
+      let cond = new Date(item.expiry) > today && item.price > 0;
+      // console.log(item);
       if(state.expiry == ''){
         return cond;
       }else{
-        return cond && (new Date(state.expiry) == new Date(item.expiry))
+        return cond && (state.expiry == item.expiry)
       }
     })
     .map(item=>{
@@ -143,8 +140,8 @@ export default function options2({
         if(state.transactionType == 'buy'){
           timeValue = item.lot_size * Math.max(item.price,item.strike-item.stockPrice-item.price)  
         }else{
-          timeValue = item.lot_size * Math.min(item.price,item.stockPrice - item.strike + item.price)  
-          expiryPnl = item.value-timeValue 
+          timeValue = Math.min(item.price,item.stockPrice - item.strike + item.price)  
+          expiryPnl = timeValue * item.lot_size;
         }
       }
 
@@ -157,7 +154,7 @@ export default function options2({
         breakevenChg,
         expiryPnl
       }
-    });
+    }).sort((a,b)=>b.expiryPnl-a.expiryPnl);
 
   const handleChange = (key)=>(e)=>{
     setState({
@@ -235,11 +232,7 @@ export default function options2({
               <Column selector="value"></Column>
               <Column selector="breakeven"></Column>
               <Column selector="timeValue"></Column>
-              <Column selector="expiryPnl">
-                {row=><div>{row.expiryPnl}<br/>
-                  {row.expiryPnl-row.value}
-                </div>}
-              </Column>
+              <Column selector="expiryPnl"></Column>
             </Table>
           </div>
         </div>
@@ -270,7 +263,7 @@ export async function getServerSideProps(ctx){
     instrumentType:type
   });
 
-  // console.log(options)
+  // console.log('options',options)
   let stockPrice = stockQuote.last_price;
   // console.log('stockPrice',stockPrice)
   let upperRange = stockPrice + (stockPrice*range/100)

@@ -15,7 +15,7 @@ export {
 
 export default function Table({columns,data,children=[],title=""}){
   let [sortOrder,setSortOrder ] = React.useState({
-    key:columns?columns[0]?.selector:children[0].props.selector,
+    key:null,
     order:true
   })
 
@@ -26,25 +26,35 @@ export default function Table({columns,data,children=[],title=""}){
     })
   }
 
-  data = data.sort((a,b)=>{
-    if(!sortOrder.key){
-      return -1;
-    }
-    if(isNaN(Number(a[sortOrder.key]))){
-      if(sortOrder.order){
-        return (a[sortOrder.key])<(b[sortOrder.key])?1:-1
-      }else{
-        return (b[sortOrder.key])>(a[sortOrder.key])?-1:1
-      }
-    }else{
-      if(sortOrder.order){
-        return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?1:-1
-      }else{
-        return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?-1:1
+  data = data
+  .map(item=>{
+    for(let key in item){
+      if(typeof item[key] == 'number'){
+        item[key] = item[key].toFixed(2)
       }
     }
-    
+    return item;
   });
+
+  if(sortOrder.key){
+    data = data.sort((a,b)=>{
+      if(isNaN(Number(a[sortOrder.key]))){
+        if(sortOrder.order){
+          return (a[sortOrder.key])<(b[sortOrder.key])?1:-1
+        }else{
+          return (b[sortOrder.key])>(a[sortOrder.key])?-1:1
+        }
+      }else{
+        if(sortOrder.order){
+          return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?1:-1
+        }else{
+          return Number(a[sortOrder.key])-Number(b[sortOrder.key])>0?-1:1
+        }
+      }
+      
+    });
+  }
+  
 
   return (
     <div className="table-container">

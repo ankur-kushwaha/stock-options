@@ -89,11 +89,11 @@ export default function Holdings({holdings,profile}) {
         </div>
 
         <Table data={data}>
-          <Column selector="tradingsymbol" name="Tradingsymbol">
+          <Column selector="tradingsymbol" name="Instrument">
             {row=><a target="_blank" href={`https://kite.zerodha.com/chart/web/ciq/${row.exchange}/${row.tradingsymbol}/${row.instrument_token}`} rel="noreferrer">{row.tradingsymbol}</a>}
           </Column>
-          <Column selector="quantity" name="Quantity"></Column>
-          <Column selector="average_price" name="BuyPrice"></Column>
+          <Column selector="quantity" name="Qty"></Column>
+          <Column selector="average_price" name="Avg Cost"></Column>
           <Column selector="last_price" name="LTP"></Column>
           <Column selector="value" name="Investment"></Column>
           <Column selector="pnl" name="PnL">{row=><Price>{row.pnl}</Price>}</Column>
