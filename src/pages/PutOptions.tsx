@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import Header from '../components/Header'
 import Sidebar from '../components/Sidebar'
 import Table from '../components/Table';
@@ -13,462 +13,702 @@ import { useRouter } from 'next/router'
 import { postData } from '../helpers/fetch';
 
 
-type Option={
-  instrument_token:string,
-  strike:number
+type Quote = {
+  last_price: number,
+  depth:{
+    sell:[{
+      price:number
+    }]
+  }
 }
 
-export default function options2({
-  options,
-  profile,
-  stockQuote,
-  type,
-  accessToken,
-  optionQuotes
+async function kiteConnect(method, args = []) {
+  let url = `http://localhost:3000/api/kiteConnect?method=${method}&args=${JSON.stringify(args || [])}`
+  console.debug('kiteConnect', url);
+  return await fetch(url).then(res => res.json());
+}
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getQuote({instrument}) {
+    
+  
+  console.log('getting quote..',instrument)
+  try {
+    const response = await kiteConnect('getQuote', [instrument]);
+    return response[instrument]
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+function useQuote({
+  optionExchange,
+  interval,
+  optionCode,
+  
+}) {
+  const [quote, setQuote] = React.useState<Quote>(undefined);
+  let instrument = optionExchange + ":" + optionCode;
+
+  useEffect(() => {
+
+    (async ()=>{
+      
+      let quote = await getQuote({instrument});
+      setQuote(quote)
+      
+    })()
+    
+  }, [])
+
+  React.useEffect(() => {
+    let timer = setTimeout(async () => {
+      let quote = await getQuote({instrument});
+      setQuote(quote)
+    }, interval)
+    return () => {
+      clearTimeout(timer)
+    }
+
+  }, [quote])
+
+  return {
+    quote
+  }
+}
+
+type Tick = {
+  signal: string
+}
+
+function useTicker({
+  stockExchange,
+  stockCode,
+  interval
 }) {
 
+  const [tick, setTick] = React.useState<Tick>();
 
-  const router = useRouter()
-  let {query}  = router;
+
+  async function getSingal() {
+    console.log('getting tick...',stockCode);
+    
+    try {
+      const response = await fetch(`http://localhost:3000/api/getDayHistory-v2?exchange=${stockExchange}&instruments=${stockCode}&interval=ONE_MINUTE`);
+      const json = await response.json();
+      setTick(json.history[json.history.length - 1])
+    } catch (e) {
+      console.error(e);
+      return setTick(undefined)
+    }
+  }
+
+  useEffect(() => {
+    getSingal();
+  }, [])
+
+  useEffect(() => {
+    let timer = setTimeout(async () => {
+      getSingal()
+    }, interval)
+
+    return () => {
+      clearTimeout(timer);
+    }
+  }, [tick])
+
+  return {
+    tick
+  }
+}
+
+type PositionStatus='OPEN'|'COMPLETE'
+
+type Position = {
+  status:PositionStatus,
+  order?: any,
+  sellPrice:number
+}
+
+function usePosition({ tick, quote, mode }: { tick: Tick, quote: Quote, mode: string }) {
+  const [position, setPosition] = React.useState<Position>();
+  const {config,dispatch} = useContext(OptionsContext)
+  const {optionCode,quantity,optionExchange} = config
+
+  // const {getQuote} = useQuote();
 
   React.useEffect(()=>{
-    console.log(accessToken)
-  },[])
-
-  async function fetchMargin({leg1,leg2}){
-    let res = await postData('/api/getMargin', [
-      {
-        "exchange": "NFO",
-        "tradingsymbol": leg1.tradingsymbol,
-        "transaction_type": "SELL",
-        "variety": "regular",
-        "product": "NRML",
-        "order_type": "LIMIT",
-        "quantity": leg1.quantity,
-        "price": leg1.price,
-        "trigger_price": 0
-      },
-      {
-        "exchange": "NFO",
-        "tradingsymbol": leg2.tradingsymbol,
-        "transaction_type": "BUY",
-        "variety": "regular",
-        "product": "NRML",
-        "order_type": "LIMIT",
-        "quantity": leg2.quantity,
-        "price": leg2.quantity,
-        "trigger_price": 0
-      }
-    ],{
-      Authorization:'token ab8oz67ryftv7gx9:'+accessToken,
-      'X-Kite-Version':3
+  
+    dispatch({
+      type:actions.SET_POSITION,
+      payload:position
     })
-    
-    if(res.status=='success'){
-      return res.data.final;
-    }else{
-      log(res);
+  },[position])
+
+  React.useEffect(() => {
+    if (!tick) {
+      return;
     }
-  }
-
-  const [state,setState ] = React.useState({
-    tradingsymbol:query.tradingsymbol,
-    expiry:"",
-    leg1:null,
-    margin:null,
-    netProfit:null,
-    netMargin:null,
-    returns:null,
-    leg2:null,
-    allMarginsData:[]
-  });
-
-  const selectLegs = (row)=>async (e)=>{
-    let {leg1,leg2 } = state;
-    if(e.target.checked){
-      if(leg1){
-        leg2= row;
-      }else{
-        leg1=row;
-      }
-    }else{
-      if(leg1?.strike == row.strike){
-        leg1= null;
-      }else{
-        leg2 = null
-      }
-    }
-    let margin;
-    if(leg1 && leg2){
-      margin = await fetchMargin({
-        leg1,leg2
-      })
-    }
-
-    let netProfit = leg2?.minInvestment - leg1?.minInvestment
-    let netMargin  = margin?.total;
-    let returns = netProfit/netMargin*100;
-    
-    setState({
-      ...state,
-      leg1,
-      netProfit,
-      netMargin,
-      returns,
-      leg2
-    })
-  }
-
-  let columns2 = [{
-    name: 'option1',   
-    selector: 'option1', 
-  },{
-    name: 'option2',   
-    selector: 'option2', 
-  },{
-    name: 'margin',   
-    selector: 'margin', 
-  },{
-    name: 'netProfit',   
-    selector: 'netProfit', 
-  },{
-    name: 'returns',   
-    selector: 'returns', 
-  }]
-
- 
-
-  let columns1 = [
-    {
-      name: 'Select',   
-      selector: 'tradingsymbol', 
-      sortable:true,
-      cell:row=><><input checked={state.leg1?.strike==row.strike||state.leg2?.strike==row.strike} onChange={selectLegs(row)} type="checkbox"></input>{row.tradingsymbol}</>
-    },
-    {
-      name: 'expiry',   
-      selector: 'expiry', 
-      sortable:true
-    },
-    {
-      name: 'strike',   
-      selector: 'strike',    
-    },
-    {
-      name: 'price',   
-      selector: 'price',    
-    },
-    {
-      name: 'breakeven',   
-      selector: 'breakeven',    
-      cell:row=><div>
-        {row.breakeven}<br/>
-        (<Price threshold={0.7} reverseColoring>{row.beChg}</Price>)
-      </div>
-      
-    },{
-      name: 'TimeValue',   
-      selector: 'minInvestment',   
-      cell:row=><Price>{row.minInvestment}</Price> 
-    }
-  ].map(item=>{
-    item.sortable = true;
-    return item;
-  });
-
-  let expiries = new Set<string>();
-
-  let optionsData = Object.values(optionQuotes).map((quote:any)=>{
-    let price = ((quote.depth.sell[0].price)+quote.depth.buy[0].price)/2
-    let stockPrice = stockQuote.last_price
-    
-    let option = options[quote.instrument_token]
-    
-    expiries.add(option.expiry);
-
-    let breakeven = option.strike+price;
-    if(type=='PE'){
-      breakeven = option.strike - price;
-    }
-    let beChg =(breakeven-stockPrice)/stockPrice*100;
-
-    let minInvestment = price * option.lot_size;
-    let today:any = new Date();
-    let expiryDate  = date.parse(option.expiry,'YYYY-MM-DD') //2025-12-24',
-
-    
-    let daysDiff = Math.ceil((expiryDate-today) / (1000 * 60 * 60 * 24)) 
-    let buySellDiff = 0;//((quote.depth.sell[0].price) - quote.depth.buy[0].price)/quote.depth.buy[0].price
-
-    let intrinsicValue = Math.max(stockPrice-option.strike,0);
-    let intrinsicValueAmt = intrinsicValue * option.lot_size;
-    let intrinsicValuePct = intrinsicValue/price*100;
-    let timeValue  = (breakeven-stockPrice)*option.lot_size;
-    let timeValue2  = (breakeven-stockPrice)/price*100;
-
-    if(type=='PE'){
-      timeValue = Math.min(price,(price - (option.strike - stockPrice)))* option.lot_size;
-      timeValue2 = (price - (option.strike - stockPrice))/price*100
-      minInvestment = timeValue
-    }
-
-    let futurePrice = price - ((timeValue*price/daysDiff)/100) + (stockPrice*0.01);
-    let roi = (futurePrice - price) / price * 100;
-
-    return {
-      ...quote,
-      ...option,
-      buySellDiff,
-      quantity:option.lot_size,
-      price,
-      beChg,
-      lotSize:option.lot_size,
-      timeValue,
-      intrinsicValueAmt,
-      intrinsicValuePct,
-      timeValue2,
-      futurePrice,
-      roi,
-      minInvestment,
-      daysDiff,
-      breakeven
-    }
-  })
-    .filter(item=>{
-      let cond = item.daysDiff < 60 
-      && item.daysDiff>0
-      // && item.price
-      // && item.buySellDiff < 0.1
-    
-      if(query.expiry?.length>0){
-        cond = cond && item.expiry == query.expiry
-      }
-      return cond;
-
-    }).sort((a,b)=>-a.minInvestment+b.minInvestment);
-
-  React.useEffect( ()=>{
-    let allMarginsData = []
-    async function run(){
-      let options = optionsData.sort((a,b)=>b.strike-a.strike);
-      console.log(options)
-      for (let i = 0; i < options.length; i++) {
-        const option1 = options[i];
-        for (let j = i+1; j < options.length; j++) {
-          const option2 = options[j];
-          let margin = await fetchMargin({
-            leg1:option1,
-            leg2:option2
-          })
-          let netProfit = (option1?.minInvestment - option2?.minInvestment)
-          let netMargin  = margin?.total;
-          let returns = netProfit/netMargin*100;
-          allMarginsData.push({
-            leg1:option1,
-            leg2:option2,
-            margin:netMargin,
-            netProfit,
-            returns
-          })
-          // console.log(margin)
-        }  
-      }
-      allMarginsData = allMarginsData.map(item=>{
-        return {
-          option1:item.leg1.tradingsymbol,
-          option2:item.leg2.tradingsymbol,
-          margin:item.margin,
-          returns:item.returns,
-          netProfit:item.netProfit
+    console.log('Signal Changed', tick?.signal);
+    if (tick?.signal == 'GREEN') {
+      if (position) {
+        console.log('Position already created');
+      } else {
+        if (mode == 'RUNNING') {
+          console.log('Creating new position');
+          createPosition()
+        }else{
+          console.log('Aborted due to mode',mode);
         }
-      })
-
-      setState({
-        ...state,
-        allMarginsData
-      })
+      }
+    } else {
+      if (position && position.status == 'COMPLETE') {
+        if (mode == 'RUNNING') {
+          console.log('Clearing position');
+          clearPosition()
+        }else{
+          console.log('Aborted due to mode',mode);
+        }
+      } else {
+        console.log('No existing position');
+      }
     }
-    run();
-    
-  },[optionQuotes])
 
-  
-  
+  }, [tick?.signal])
 
-  const handleChange = (key)=>(e)=>{
-    if(key=='expiry'){
-      router.push({
-        pathname: '',
-        query: { ...query,expiry:e.target.value },
-      })
+  async function getOrder(orderId) {
+    let orders = await kiteConnect('getOrders');
+    if (!orders) {
+      return {
+        status: "OPEN"
+      }
+
     }
-    if(key=='tradingsymbol'){
-      router.push({
-        pathname: '',
-        query: { ...query,[key]:e.target.value },
-      })
+    let order = orders.find(order => order.order_id == orderId)
+    if (!order) {
+      throw new Error('Invalid orderId: ' + orderId);
     }
-    setState({
+    return order;
+  }
+
+  async function createPosition() {
+
+    let { order_id: orderId } = await kiteConnect('placeOrder', ['regular', {
+      transaction_type: "SELL",
+      tradingsymbol: optionCode,
+      product: "NRML",
+      order_type: "LIMIT",
+      price: quote.last_price,
+      quantity: quantity,
+      exchange: optionExchange
+    }]);
+
+    if (orderId) {
+      let order = await getOrder(orderId);
+
+      switch(order.status){
+      case 'COMPLETE':{
+        setPosition({
+          status:"COMPLETE",
+          sellPrice:order.average_price,
+          order
+        })
+        break;
+      }
+      case 'OPEN':{
+        setPosition({
+          sellPrice:quote.last_price,
+          status:"OPEN",
+          order
+        })
+        break;
+      }
+      }
+      
+    }
+  }
+
+  React.useEffect(() => {
+
+    async function refreshOrder() {
+      let order = position.order;
+
+      while (order.status == 'OPEN') {
+        console.log('order open', order);
+        await timeout(2000);
+        order = await getOrder(order.order_id);
+      }
+      console.log('Order closed', order);
+
+      switch (order.status) {
+      case 'REJECTED': {
+        setPosition(undefined)
+        break;
+      }
+      case 'COMPLETE': {
+        setPosition({
+          status:"COMPLETE",
+          sellPrice:order.average_price,
+          order
+        })
+        break;
+      }
+      default: {
+        throw new Error('order not open nor complete');
+      }
+      }
+    }
+
+    if (position?.order?.status == 'OPEN') {
+      refreshOrder();
+    }
+
+  }, [position?.order?.status])
+
+
+
+  async function clearPosition() {
+    console.log('Selling Option');
+
+    let sellPrice = position.sellPrice;
+    let buyPrice = quote.depth.sell[0].price;
+
+    if(((sellPrice-buyPrice)/buyPrice*100)<config.minProfitPct){
+      console.log('Aborted',{
+        sellPrice,
+        buyPrice,
+        minProfitPct:config.minProfitPct,
+        currentPct:((sellPrice-buyPrice)/buyPrice*100)
+      });
+      return;
+    }
+
+    let orderId = await kiteConnect('placeOrder', ['regular', {
+      transaction_type: "BUY",
+      tradingsymbol: optionCode,
+      product: "NRML",
+      order_type: "LIMIT",
+      price: quote.last_price,
+      quantity,
+      exchange: optionExchange
+    }]);
+
+    console.log('Orderid', orderId);
+
+    let order = await getOrder(orderId)
+
+    while (order.status == 'OPEN') {
+      console.log('order open', order);
+      await timeout(2000);
+      order = await getOrder(orderId);
+    }
+
+    console.log('Order closed', order);
+
+    if (order.status != 'COMPLETE') {
+      throw new Error('order not open nor complete');
+    }
+
+    if (order.status == 'COMPLETE') {
+      setPosition(undefined);
+    }
+  }
+
+  return {
+    position
+  }
+}
+
+
+type InitialState = Pick<OptionsContenxtType,"config"|"mode">;
+
+const initialState: InitialState= {
+  config:{
+    stockCode: 'VEDL22MAY300PE',
+    stockExchange: 'NFO',
+    optionCode: 'VEDL22MAY300PE',
+    optionExchange: 'NFO',
+    minProfitPct: 20,
+    quantity: 50,
+    interval: 10000
+  },
+  mode:"STOPPED"
+}
+
+const actions = {
+  SET_CONFIG: "SET_CONFIG",
+  SET_MODE: "SET_MODE",
+  SET_TICK:"SET_TICK",
+  "SET_POSITION":"SET_POSITION"
+}
+
+const reducer = (state, action) => {
+
+  switch (action.type) {
+  case actions.SET_CONFIG: {
+    return {
+      ...state
+    }
+  }
+  case actions.SET_MODE: {
+    return {
       ...state,
-      [key]:e.target.value
+      mode: action.payload
+    }
+  }
+  case actions.SET_TICK: {
+    return {
+      ...state,
+      tick: action.payload
+    }
+  }
+  case actions.SET_POSITION: {
+    return {
+      ...state,
+      position: action.payload
+    }
+  }
+  default: {
+    return state;
+  }
+  }
+}
+
+type Config = {
+  optionExchange:string,
+  interval:number,
+  quantity:number,
+  stockExchange:string,
+  stockCode:string,
+  minProfitPct:number,
+  optionCode:string
+}
+
+type OptionsContenxtType = {
+  config?:Config,
+  mode?:string,
+  position?:any,
+  dispatch?:({})=>{}
+}
+
+
+const OptionsContext = React.createContext<OptionsContenxtType>({})
+
+
+const Provider = ({ children }) => {
+  const [state, dispatch] = React.useReducer(reducer, initialState);
+
+  let value = {
+    ...state,
+    dispatch
+  }
+  return (
+    <OptionsContext.Provider value={value}>
+      {children}
+    </OptionsContext.Provider>
+  )
+}
+
+const Trigger = React.memo(()=> {
+  const {  dispatch } = React.useContext(OptionsContext);
+  
+  
+  function start() {
+    dispatch({
+      type: actions.SET_MODE,
+      payload: 'RUNNING'
     })
   }
+
+  function stop() {
+    dispatch({
+      type: actions.SET_MODE,
+      payload: 'STOPPED'
+    })
+  }
+
+
+  return (<>
+
+    <button className='button' onClick={start}>Start</button>
+    <button className='button' onClick={stop}>Stop</button> </>
+  )
+})
+
+function PositionLoader({
+  onSelection
+}){
+
+  const [isModalOpen,setModalOpen] = React.useState(false);
+  const [positions,setPositions] = React.useState([]);
+  React.useEffect(()=>{
+    fetch('http://localhost:3000/api/kiteConnect?method=getPositions')
+      .then(res=>res.json())
+      .then(res=>{
+        setPositions(res.net)
+      }).catch(()=>{
+        setPositions([])
+      })
+  },[]);
+
+  function handleSelect(selectedPosition){
+    onSelection(selectedPosition);
+    setModalOpen(false);
+  }
+
 
   return <>
-    <div>
-      
-      <Header userProfile={profile}/>
-      
-      <div className="mt-6 container">
+    <div className={"modal "+(isModalOpen?'is-active':'')}>
+      <div className="modal-background"></div>
+      <div className="modal-card">
+        <header className="modal-card-head">
+          <p className="modal-card-title">Select Position</p>
+          <button className="delete" onClick={()=>setModalOpen(false)} aria-label="close"></button>
+        </header>
+        <section className="modal-card-body">
+     
+          <div className="table-container">
+            <table className="table is-fullwidth">
+              <thead>
+                <tr>
+                  <th><abbr title="Position">Tradingsymbol</abbr></th>
+                  <th><abbr title="Position">Quantity</abbr></th>
+                  <th><abbr title="Position">Select</abbr></th>
+                </tr>
+              </thead>
+              <tbody>
+                {positions
+                  .filter(item=>item.exchange=='NFO' && item.quantity < 0)
+                  .map(position=> <tr key={position.tradingsymbol}>
+                    <td>{position.tradingsymbol}</td>
+                    <td>{position.quantity}</td>
+                    <td><button onClick={()=>handleSelect(position)}>
+                    Select
+                    </button></td>
+                  </tr>)}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <footer className="modal-card-foot">
+          <button className="button is-success" onClick={()=>setModalOpen(false)}>Save changes</button>
+          <button className="button" onClick={()=>setModalOpen(false)}>Cancel</button>
+        </footer>
+      </div>
+    </div>
 
+    <button onClick={()=>setModalOpen(true)}>Load</button>
+  </>
+}
+
+function ConfigModule({
+  onChange,
+  config:initialConfig
+}){
+  const [config,setConfig] = React.useState<Config>(initialConfig);
+
+  function handleInputChange(event){
+    const target = event.target;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    const name = target.name 
+
+
+    let newConfig = {
+      ...config,
+      [name]: value
+    }
+
+    // @ts-ignore
+    setConfig(newConfig);
+    onChange(newConfig)
+  }
+  return <>
+    <div className="sidebar">
+      <div className="input-item">
         <div className="columns">
-          <div className="column is-3">
-
-            <div className="box">
-              <div className="is-size-7">
-  Stock Price: {stockQuote?.last_price}
-              </div>
-              <hr />
-
-              <div>
-                <div className="is-fullwidth is-small mb-3">
-                  <div className="is-size-7">
-                    
-                  </div>
-                  <div className="field">
-                    <div className="control is-small">
-                      <input onBlur={handleChange('tradingsymbol')} defaultValue={state.tradingsymbol} className="input is-small" type={'text'} />
-                    </div>
-                  </div>
-                </div>
-              </div> 
-
-              <div>
-                <div className="is-size-7">
-                  Expiry
-                </div>
-                <div className="select is-fullwidth is-small mb-3">
-                  <select value={query.expiry} onChange={handleChange('expiry')}>
-                    <option value="">Select Expiry</option>
-                    {Array.from(expiries).map(item=><option key={item}>{item}</option>)}
-                  </select>
-                </div>
-              </div> 
-            </div>
-          </div>
-          
+          <div className="column is-one-quarter">
+            <div className="name is-size-7">
+          Target Stock
+            </div></div>
           <div className="column">
-
-            <div className="box">
-              <div className="is-size-7">
-              Leg1: {state.leg1?.strike},{state.leg1?.minInvestment}
-              </div>
-              <div className="is-size-7">
-              Leg2: {state.leg2?.strike},{state.leg2?.minInvestment}
-              </div>
-              
-              <div className="is-size-7">
-              Net Profit: <Price>{state.netProfit}</Price>
-              </div>
-              <div className="is-size-7">
-              Margin: <Price>{state.netMargin}</Price>
-              </div>
-
-              <div className="is-size-7">
-              Returns: <Price>{state.returns}</Price>
-              </div>
-
-            </div>  
-          </div>
+          
+            <input className="input is-small" type="text" name={'stockCode'} value={config.stockCode} onChange={handleInputChange}/>
             
-
+          
+          </div>
+          <div className="column">
+            <input className="input is-small" type="text" name={'stockExchange'} value={config.stockExchange} onChange={handleInputChange}/>
+          </div>
         </div>
         
-        <div className="columns">
-          
-          
-          <div className="column">
-            <Table columns={columns1} data={optionsData}/>
-          </div>
-          <div className="column">
-            <Table columns={columns1} data={optionsData.reverse()}/>
-          </div>
-
-          
-          
-        </div>
-        <div className="columns">
-          <div className="column">
-            <Table columns={columns2} data={state.allMarginsData}/>
-          </div>
-        </div>
-
-
+        
       </div>
+
+      <div className="input-item">
+        <div className="columns">
+          <div className="column is-one-quarter">
+            <div className="name is-size-7" >
+          Option Stock
+            </div>
+          </div>
+          <div className="column"><input className="input is-small" type="text" name={'optionCode'} value={config.optionCode} onChange={handleInputChange}/></div>
+          <div className="column"><input className="input is-small" type="text" name={'optionExchange'} value={config.optionExchange} onChange={handleInputChange}/></div>
+        </div>
+        
+        <div className="input-box">
+          
+          
+        </div>
+      </div>
+
+      <div className="input-item">
+        <div className="columns">
+          <div className="column is-one-quarter"><div className="name is-size-7">
+          Quantity
+          </div></div>
+          <div className="column">  <input className="input is-small" type="text" name={'quantity'} value={config.quantity} onChange={handleInputChange}/></div>
+        </div>
+        
+        
+      </div>
+
+      <div className="input-item">
+        <div className="columns">
+          <div className="column is-one-quarter">
+            <div className="name is-size-7">
+          Min Profit
+            </div></div>
+          <div className="column"><input className="input is-small" type="text" name={'minProfitPct'} value={config.minProfitPct} onChange={handleInputChange}/></div>
+        </div>
+        
+        <div className="input-box">
+          
+        </div>
+      </div>
+
+
     </div>
   </>
 }
 
-function log(...args){
-  console.log('PutOptions',args)
+
+
+function Navbar(){
+  return (
+    <nav className="navbar mb-5" role="navigation" aria-label="main navigation">
+      <div className="navbar-brand">
+        <a className="navbar-item" href="https://bulma.io">
+          <img src="https://bulma.io/images/bulma-logo.png" alt="Bulma: Free, open source, and modern CSS framework based on Flexbox" width="112" height="28"/>
+        </a>
+
+        <a role="button" className="navbar-burger" aria-label="menu" aria-expanded="false">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+    </nav>
+  )
 }
 
-export async function getServerSideProps(ctx){
-  let {req,query} = ctx;
-  let {tradingsymbol,range=10,type='CE'} = query; // INFY
-  let kc = await getKiteClient(req.cookies);
-  let accessToken = req.cookies.accessToken;
+function App(){
+  const { 
+    config,
+    mode,
+    dispatch,
+    position
+  } = React.useContext(OptionsContext);
 
-  let stockCodeId = `NSE:${tradingsymbol}`
-  if(tradingsymbol == 'NIFTY'){
-    stockCodeId = 'NSE:NIFTY 50'
-  }
-  let quotes = await kc.getQuote([stockCodeId]);
-  let stockQuote = quotes[stockCodeId];
+  let {
+    optionExchange,
+    interval, 
+    stockExchange,
+    stockCode,
+    optionCode,
+  } = config
 
-  let profile = await kc.getProfile();
+  let { quote } = useQuote({
 
-  let options:Option[] = await fetchOptions({
-    tradingsymbol:tradingsymbol,
-    instrumentType:type
+    optionExchange,
+    interval,
+    optionCode
   });
 
-  // console.log(options)
-  let stockPrice = stockQuote.last_price;
-  // console.log('stockPrice',stockPrice)
-  let upperRange = stockPrice + (stockPrice*range/100)
-  let lowerRange = stockPrice - (stockPrice*range/100)
+  let { tick } = useTicker({
+    stockExchange,
+    stockCode,
+    interval
+  })
 
-  for(let option of Object.values(options)){
+  useEffect(()=>{
+    dispatch({
+      type:"SET_TICK",
+      payload:tick
+    })
+  },[tick])
+
+  const {  } = usePosition({ tick, quote, mode })
+
+  function handleSelection(selectedPosition){
+    console.log(selectedPosition);
     
-    if( option.strike < lowerRange || option.strike > upperRange){
-      delete options[option.instrument_token];
-    }
   }
 
-  log(Object.values(options).map(option=>option.strike));
+  function handleConfigChange(config){
+    console.log(config);
+    dispatch({
+      type:actions.SET_CONFIG,
+      payload:config
+    })
 
-  let optionQuotes = await kc.getQuote(Object.values(options).map(item=>item.instrument_token));
+  }
+  
+  return (
+    <div className=''>
+      <Navbar></Navbar>
+      <div className='container'>
+        <div className="columns">
+          <div className="column is-4">
+            <ConfigModule config={config} onChange={handleConfigChange}></ConfigModule>
+          </div>
+          <div className="column">
+            <Trigger></Trigger>
+            <PositionLoader onSelection={handleSelection}></PositionLoader>
+            {mode}
+            <br />
+            {JSON.stringify(tick?.signal)}
+            <br />
+            {JSON.stringify(quote?.last_price)}
+            <br />
+            {JSON.stringify(position)}
+          </div>
+        </div>
+      </div>
+    
+    </div>
+  )
+}
 
-  for(let stockCode in quotes){
-    let quote = quotes[stockCode];
-    delete quote.timestamp;
-    delete quote.last_trade_time;
-  }
-  for(let stockCode in optionQuotes){
-    let quote = optionQuotes[stockCode];
-    delete quote.timestamp;
-    delete quote.last_trade_time;
-  }
+
+export default function PutOptions({ }) {
+
+  return <>
+    <Provider>
+      <App/>
+    </Provider>
+  </>
+
+}
+
+export async function getServerSideProps() {
+
 
   return {
-    props:{
-      type,
-      stockQuote,
-      accessToken,
-      options,
-      profile,
-      optionQuotes
+    props: {
+
     }
   }
 }

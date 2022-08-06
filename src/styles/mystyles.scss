@@ -5,3 +5,19 @@
 
 // Import only what you need from Bulma
 @import "~bulma/bulma";
+
+.option-seller{
+  
+  
+    .main{
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+        flex:1;
+    }
+    .sidebar,.main{
+        padding:10px;
+        // border:1px solid #dbdbdb;
+    }
+    
+}

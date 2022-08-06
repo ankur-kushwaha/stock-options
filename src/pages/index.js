@@ -8,7 +8,6 @@ import KiteConnect from 'kiteconnect';
 import { getKiteClient } from '../helpers/kiteConnect';
 import Header from '../components/Header';
 import { validateUser } from '../helpers/userHelper';
-import connectDB from '../middleware/mongodb';
 import dbConnect from '../middleware/mongodb';
 let API_KEY = 'ab8oz67ryftv7gx9'
 

@@ -1,6 +1,6 @@
 import useZerodha from './useZerodha';
 
-let {createOrder2,getHistory} = useZerodha();
+let {createOrder,getHistory} = useZerodha();
 
 
 
@@ -80,11 +80,12 @@ class Order{
     }
   
   
-    let orderId = await createOrder2({
+    let orderId = await createOrder({
       transactionType,
       tradingsymbol:this.tradingsymbol,
       quantity,
-      price: price
+      price: price,
+      exchange:"NFO"
     });
   
     if(!orderId){

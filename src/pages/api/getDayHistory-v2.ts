@@ -1,6 +1,5 @@
-let { SmartAPI } = require("smartapi-javascript");
-const AngelInstrument = require('../../models/angelInstruments');
-const ZerodhaInstrument = require('../../models/instrument');
+import {SmartAPI } from "smartapi-javascript"
+import ZerodhaInstrument from '../../models/instrument';
 import dbConnect from '../../middleware/mongodb'
 import date from 'date-and-time';
 
@@ -59,10 +58,12 @@ export async function getCandleData({
   }
   if(!response || !response.data == null){
     console.log('res',response)
-    console.log(tradingsymbol,params,response);
+    
     throw new Error('No history response from server');
   }
   let data = response.data;
+  // console.log('data',response,params);
+  
   return {
     data,
     instrumentToken
@@ -91,6 +92,9 @@ async function getDayHistory(tradingsymbol,options:Options){
     tradingsymbol,
     defaultExchange
   })
+
+  // console.log(data);
+  
   
   let first = data[0];
   let prev = {

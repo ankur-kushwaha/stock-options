@@ -47,7 +47,14 @@ async function getKiteTickerClient(cookiesRef) {
   return kt;
 } 
 
+async function kiteConnect(method,args,{
+  host
+}={}){
+  return await fetch(`${host||""}/api/kiteConnect?method=${method}&args=${JSON.stringify(args||[])}`).then(res=>res.json());
+}
+
 module.exports = {
+  kiteConnect,
   getKiteClient,
   getKiteTickerClient
 }

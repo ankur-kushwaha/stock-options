@@ -97,8 +97,8 @@ export default function options2({
       let option = options[quote.instrument_token];
       expiries.add(option.expiry);
       let stockPrice = stockQuote.last_price;
-      let bidPrice = quote.depth.buy[0].price;
-      let offerPrice = quote.depth.sell[0].price;
+      let bidPrice = quote.depth.buy[0].price||quote.last_price;
+      let offerPrice = quote.depth.sell[0].price||quote.last_price;
       let price = state.transactionType == 'buy'?offerPrice:bidPrice
       let value = price * option.lot_size;
     
@@ -126,7 +126,7 @@ export default function options2({
     .map(item=>{
       let breakeven,breakevenChg,timeValue;
       
-      let expiryPnl;
+      let expiryPnl,extrinsicValue;
 
       if(item.tradingsymbol.endsWith('CE')){
         breakeven = item.strike + item.price;
@@ -142,6 +142,7 @@ export default function options2({
         }else{
           timeValue = Math.min(item.price,item.stockPrice - item.strike + item.price)  
           expiryPnl = timeValue * item.lot_size;
+          extrinsicValue = item.price - timeValue;
         }
       }
 
@@ -152,7 +153,8 @@ export default function options2({
         timeValue,
         breakeven,
         breakevenChg,
-        expiryPnl
+        expiryPnl,
+        extrinsicValue
       }
     }).sort((a,b)=>b.expiryPnl-a.expiryPnl);
 
@@ -232,6 +234,7 @@ export default function options2({
               <Column selector="value"></Column>
               <Column selector="breakeven"></Column>
               <Column selector="timeValue"></Column>
+              <Column selector="extrinsicValue"></Column>
               <Column selector="expiryPnl"></Column>
             </Table>
           </div>

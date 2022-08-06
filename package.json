@@ -1,7 +1,7 @@
 {
   "name": "learn-starter",
   "version": "0.1.0",
-  "private": true,
+  "private": true, 
   "scripts": {
     "lint": "next lint",
     "dev": "next dev",
@@ -34,6 +34,7 @@
     "react-highcharts": "^16.1.0",
     "react-highlight": "^0.14.0",
     "react-toast-notifications": "^2.5.1",
+    "recharts": "^2.1.8",
     "sass": "^1.38.2",
     "smartapi-javascript": "^1.0.14",
     "socket.io": "^4.1.3",

@@ -15,7 +15,6 @@ export default function BuySell({
   userProfile,
   stock
 }) {
-  // const { addToast } = useToasts()
 
   let {query} = useRouter();
   let {tradingsymbol} = query;

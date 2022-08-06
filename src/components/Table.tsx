@@ -1,11 +1,20 @@
-import React from 'react'
+import React, { MouseEvent } from 'react'
 import DataTable from 'react-data-table-component';
 import Cell from './Cell';
 
 const BaseExpandedComponent = ({ data }) => <pre>
   {JSON.stringify(data, null, 2)}</pre>;
 
-function Column({changeSortOrder,item}){
+
+type ColumnProps={
+  changeSortOrder?:(selector:string)=>(event:MouseEvent)=>void,
+  item?:any,
+  children?:any,
+  selector:string,
+  onClick?:(event: MouseEvent)=>void
+}
+
+function Column({changeSortOrder,item}:ColumnProps){
   return <th onClick={changeSortOrder(item.selector)} key={item.name}>{item.name}</th>
 }
 
@@ -13,7 +22,14 @@ export {
   Column
 }
 
-export default function Table({columns,data,children=[],title=""}){
+type TableProps = {
+  columns?:any,
+  data:any,
+  children?:any,
+  title?:any
+}
+
+export default function Table({columns,data,children=[],title=""}:TableProps){
   let [sortOrder,setSortOrder ] = React.useState({
     key:null,
     order:true
@@ -23,18 +39,18 @@ export default function Table({columns,data,children=[],title=""}){
     setSortOrder({
       key,
       order:!sortOrder.order
-    })
+    }) 
   }
 
   data = data
-  .map(item=>{
-    for(let key in item){
-      if(typeof item[key] == 'number'){
-        item[key] = item[key].toFixed(2)
+    .map(item=>{
+      for(let key in item){
+        if(typeof item[key] == 'number'){
+          item[key] = item[key].toFixed(2)
+        }
       }
-    }
-    return item;
-  });
+      return item;
+    });
 
   if(sortOrder.key){
     data = data.sort((a,b)=>{
