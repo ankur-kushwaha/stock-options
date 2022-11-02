@@ -13,28 +13,28 @@ export default function InstrumentSidebar() {
   }]);
 
   React.useEffect(() => {
-    setSelectedInstruments({
+    setSelectedInstruments?.({
       "NIFTY 50": true,
       "NIFTY BANK": true
     })
   }, [])
 
-  const handleChange = (stockCode) => (e) => {
-    setSelectedInstruments({
+  const handleChange = (stockCode:string) => (e:any) => {
+    setSelectedInstruments?.({
       ...selectedInstruments,
       [stockCode]: e.target.checked
     })
   }
 
-  const setConfigValue = (configName, checked = true) => (e) => {
-    setConfig({
+  const setConfigValue = (configName:string, checked = true) => (e:any) => {
+    setConfig?.({
       ...config,
       [configName]: checked ? e.target.checked : e.target.value
     })
   }
 
-  const handleMinStrikeChange = (e) => {
-    setConfig({
+  const handleMinStrikeChange = (e:any) => {
+    setConfig?.({
       ...config,
       minStrike: e.target.value
     })

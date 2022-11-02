@@ -5,7 +5,7 @@ import Cookies from 'cookies';
 import { API_KEY, cookieName } from '../components/contants';
 import { Card } from 'flowbite-react';
 
-export default function positions({ positions }) {
+export default function positions({ positions }:any) {
   
   return (
     <div className="mt-4 mx-auto max-w-screen-xl	">

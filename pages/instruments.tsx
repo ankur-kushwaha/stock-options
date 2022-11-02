@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { GetServerSideProps } from 'next'
 import React, { useContext, useEffect, useRef } from 'react'
 import { AppContext } from '../lib/AppContext';
@@ -19,7 +20,7 @@ type Option = {
   timeValue:string;
 }
 
-export default function Instruments({ positions }) {
+export default function Instruments({ positions }:any) {
   const [options, setOptions] = React.useState<Option[]>([]);
   const stockQuotes = useRef({});
   const { selectedInstruments, config ,setSelectedInstruments} = useContext(AppContext);
@@ -30,7 +31,7 @@ export default function Instruments({ positions }) {
 
   useEffect(()=>{
     if(stock && typeof stock == 'string'){
-      setSelectedInstruments(
+      setSelectedInstruments?.(
         {
           [stock]:true
         }

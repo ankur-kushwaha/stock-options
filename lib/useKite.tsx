@@ -1,7 +1,8 @@
-export function useKite({stockQuotes,config}){
+//@ts-nocheck 
+export function useKite({stockQuotes,config}:any){
 
-  async function fetchQuotes(tradingsymbols, exchange = 'NFO') {
-    tradingsymbols = tradingsymbols.map(item => `i=${exchange}:${item}`).join("&")
+  async function fetchQuotes(tradingsymbols:any, exchange = 'NFO') {
+    tradingsymbols = tradingsymbols.map((item:any) => `i=${exchange}:${item}`).join("&")
     const res = await fetch("/api/kiteConnect?api=quote", {
       method: "POST",
       body: JSON.stringify({
@@ -12,7 +13,7 @@ export function useKite({stockQuotes,config}){
   }
 
 
-  async function getInstruments({ stockCode,singleOption }) {
+  async function getInstruments({ stockCode,singleOption }:any) {
 
     let code=stockCode;
     
@@ -25,7 +26,7 @@ export function useKite({stockQuotes,config}){
     }
         
     const res = await fetch("/api/options?name=" + (code)).then(res => res.json())
-    let options = res.data.filter(item => {
+    let options = res.data.filter((item:any) => {
       const stockPrice = stockQuotes.current[stockCode]?.last_price;
       if(!stockPrice){
         return false;

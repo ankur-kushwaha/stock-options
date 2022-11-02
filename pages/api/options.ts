@@ -1,4 +1,4 @@
-import { NextApiRequest } from "next";
+import { NextApiRequest, NextApiResponse } from "next";
 import clientPromise from "../../mongodb";
 
 type QueryParam = {
@@ -8,7 +8,7 @@ type QueryParam = {
   expiry?: any
 }
 
-export default async function handler(req: NextApiRequest, res) {
+export default async function handler(req: NextApiRequest, res:NextApiResponse) {
   const { name, expiry } = req.query;
 
   if (!name) {

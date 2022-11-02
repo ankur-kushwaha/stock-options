@@ -16,9 +16,9 @@ export const ReactTable = function ReactTable<T extends object>({ data, columns 
     <Table {...getTableProps()} >
       <thead>
         {headerGroups.map((headerGroup, i) => (
-          <tr key={i} {...headerGroup.getHeaderGroupProps()}>
+          <tr {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column, j) => (
-              <Table.HeadCell key={j}
+              <Table.HeadCell
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 //@ts-ignore
                 {...column.getHeaderProps(column.getSortByToggleProps())}
@@ -47,7 +47,7 @@ export const ReactTable = function ReactTable<T extends object>({ data, columns 
               <Table.Row {...row.getRowProps()} key={i} className="bg-white dark:border-gray-700 dark:bg-gray-800">
                 {row.cells.map((cell, j) => {
                   return (
-                    <Table.Cell key={j} {...cell.getCellProps()} className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                    <Table.Cell {...cell.getCellProps()} className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
                       {cell.render('Cell')}
                     </Table.Cell>
                   )

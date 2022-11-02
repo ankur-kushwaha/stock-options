@@ -19,8 +19,8 @@ export function Settings(props: SettingsProps) {
     setDialogOpen(false)
   }
 
-  function handleLiveMarketChange(value){
-    setConfig({
+  function handleLiveMarketChange(value:boolean){
+    setConfig?.({
       ...config,
       liveMarket:value
     });

@@ -1,6 +1,6 @@
+// @ts-nocheck 
 import { NextApiRequest } from "next";
 import clientPromise from "../../mongodb";
-
 
 export default async function handler(req: NextApiRequest, res) {
   const client = await clientPromise;

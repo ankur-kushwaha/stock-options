@@ -10,7 +10,7 @@ export interface PositionsTableProps {
 
 export function PositionsTable({ positions }: PositionsTableProps) {
 
-  const netPositions = positions.data.net.sort((a,b)=>b.pnl-a.pnl)
+  const netPositions = positions.data.net.sort((a:any,b:any)=>b.pnl-a.pnl)
 
   const columns = React.useMemo(
     () => [

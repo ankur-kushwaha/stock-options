@@ -2,7 +2,7 @@ import { API_KEY, cookieName } from "../../components/contants"
 import Cookies from 'cookies';
 import { NextApiRequest } from "next";
 
-export default async function handler(req: NextApiRequest, res) {
+export default async function handler(req: NextApiRequest, res:any) {
   const { api } = req.query
   const {queryParam} = JSON.parse(req.body);
   const cookies = new Cookies(req, res)

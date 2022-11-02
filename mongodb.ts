@@ -1,3 +1,4 @@
+// @ts-nocheck 
 import { MongoClient } from 'mongodb'
 
 const uri = process.env.MONGODB_URI||'mongodb+srv://ankur:ankur@cluster0.wgb6k.mongodb.net/myFirstDatabase?authSource=admin&replicaSet=atlas-12lvf6-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true'
@@ -7,7 +8,7 @@ const options = {
 }
 
 let client
-let clientPromise
+let clientPromise:Promise<MongoClient>
 
 // if (!process.env.MONGODB_URI) {
 //   throw new Error('Please add your Mongo URI to .env.local')

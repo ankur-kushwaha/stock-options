@@ -1,6 +1,8 @@
+
 import {  Card } from 'flowbite-react';
 import PositionsTable from '../components/positions-table/positions-table';
 import Cookies from 'cookies'
+// @ts-ignore
 import KiteConnect from 'kiteconnect';
 import { API_KEY, cookieName } from '../components/contants';
 
@@ -8,7 +10,7 @@ const kc = new KiteConnect.KiteConnect({
   api_key: API_KEY
 });
 
-async function fetchAccessToken(requestToken) {
+async function fetchAccessToken(requestToken:string) {
   console.log('fetching access token', requestToken);
   let response;
   try {
@@ -34,7 +36,7 @@ export function Index() {
 
 
 
-export const getServerSideProps = async (context) => {
+export const getServerSideProps = async (context:any) => {
   const { req, res } = context;
   const query = context.query;
   const cookies = new Cookies(req, res)

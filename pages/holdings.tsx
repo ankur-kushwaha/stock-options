@@ -15,7 +15,7 @@ export function Holdings({holdings}: HoldingsProps) {
   return (
     <div className="mt-4 mx-auto max-w-screen-xl	">
       <Card>
-        <HoldingsTable holdings={holdings.sort((a,b)=>b.pnl-a.pnl)}/>
+        <HoldingsTable holdings={holdings.sort((a:any,b:any)=>b.pnl-a.pnl)}/>
       </Card>
     </div>
   );

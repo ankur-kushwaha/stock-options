@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/cookies": "^0.7.7",
+    "@types/debounce": "^1.2.1",
     "@types/node": "18.11.9",
     "@types/react": "18.0.24",
     "@types/react-dom": "18.0.8",
+    "@types/react-table": "^7.7.12",
     "cookies": "^0.8.0",
     "flowbite-react": "^0.3.2",
     "kiteconnect": "^4.0.1",

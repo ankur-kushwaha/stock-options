@@ -11,7 +11,7 @@ type AppContextProps = {
 }
 export const AppContext = React.createContext<AppContextProps>({});
 
-export function AppProvider({ children }) {
+export function AppProvider({ children }:any) {
   const [selectedInstruments, setSelectedInstruments] = useState({});
   const [toastText, setToastText] = useState("");
   const [config, setConfig] = useState({
@@ -30,6 +30,7 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    //@ts-ignore
     setItem('config', config);
   }, [config]);
 
