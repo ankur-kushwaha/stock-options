@@ -24,10 +24,11 @@ export default function Instruments({ positions }:any) {
   const [options, setOptions] = React.useState<Option[]>([]);
   const stockQuotes = useRef({});
   const { selectedInstruments, config ,setSelectedInstruments} = useContext(AppContext);
-  const { getInstruments, fetchStockQuotes } = useKite({ config, stockQuotes });
+  const { getInstruments, fetchStockQuotes,getMargin } = useKite({ config, stockQuotes });
   const { showToast } = useToast();
   const {query} = useRouter()
   const {stock} = query;
+  const [fetchState,setFetchState] = React.useState();
 
   useEffect(()=>{
     if(stock && typeof stock == 'string'){
@@ -66,15 +67,13 @@ export default function Instruments({ positions }:any) {
 
     const output = await Promise.all(promiseArr);
 
-    const out = output.flat().sort((a, b) => b.timeValue - a.timeValue).map(item=>{
-      const position = item;
-      item.absoluteTimeValue = (position.timeValue*1000000/(position.lot_size * stockQuotes.current[position.name].last_price)).toFixed(2);
-      return item;
-    })
+    const out = output.flat().sort((a, b) => b.timeValue - a.timeValue);
     setOptions(out);
   }
 
   async function getAllOptions({mode}) {
+
+    setFetchState("FETCHING")
     
     showToast("Getting all options")
     setOptions([]);
@@ -83,7 +82,7 @@ export default function Instruments({ positions }:any) {
     if(mode == 'ALL'){
       response = (await fetch('/api/option-instruments').then(res => res.json())).data;
     }else{
-      response = ["ADANIENT","LALPATHLAB","ZEEL","GNFC","ADANIPORTS","IDFCFIRSTB","IDEA","BAJFINANCE","IBULHSGFIN","IRCTC","PVR","HAL","TATAMOTORS","GMRINFRA","PNB","MINDTREE"];
+      response = ["ADANIENT","LALPATHLAB","ZEEL","GNFC","ADANIPORTS","IDFCFIRSTB","IDEA","BAJFINANCE","IBULHSGFIN","IRCTC","PVR","HAL","TATAMOTORS","GMRINFRA","PNB"];
     }
     await fetchStockQuotes(response.reduce((a, b) => {
       a[b] = true
@@ -98,13 +97,17 @@ export default function Instruments({ positions }:any) {
         singleOption: true
       });
 
-      setOptions(options => [...options, ...option].sort((a, b) => b.timeValue - a.timeValue).map(item=>{
-        const position = item;
-        item.absoluteTimeValue = (position.timeValue*1000000/(position.lot_size * stockQuotes.current[position.name].last_price)).toFixed(2);
-        return item;
-      }))
+      setOptions(options => [...options, ...option].sort((a, b) => b.timeValue - a.timeValue))
     }
+    setFetchState("FETCHED")
   }
+
+  useEffect(()=>{
+    
+    if(fetchState == 'FETCHED'){
+      handleClickGetMargins();
+    }
+  },[fetchState])
 
   function loadAllStocks(){
     getAllOptions({
@@ -112,9 +115,26 @@ export default function Instruments({ positions }:any) {
     })
   }
 
-  function loadSelectedStocks(){
-    getAllOptions({mode:"SELECTED"})
+  async function loadSelectedStocks(){
+    await getAllOptions({mode:"SELECTED"})
   }
+
+
+  async function handleClickGetMargins(){
+    for(let option of options){
+      let margin = await getMargin({
+        tradingsymbol:option.tradingsymbol,
+        lotSize: option.lot_size,
+        price:option.price
+      }).then(res=>res.total)
+      option.margin = margin.toFixed(2);
+      option.absoluteTimeValue = (option.timeValue*100 / option.margin).toFixed(2)
+      option.timeValue = option.timeValue.toFixed(2)
+    }
+    setOptions([...options])
+    
+  }
+
 
   const columns = React.useMemo(() => {
     return [
@@ -173,8 +193,12 @@ export default function Instruments({ positions }:any) {
         accessor: 'timeValue', // accessor is the "key" in the data
       },
       {
-        Header: 'TimeValue/10L',
+        Header: 'Margin ratio',
         accessor: 'absoluteTimeValue'
+      },
+      {
+        Header: 'Margin',
+        accessor: 'margin'
       },
     ]
   }, [])

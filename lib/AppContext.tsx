@@ -14,11 +14,11 @@ export const AppContext = React.createContext<AppContextProps>({});
 export function AppProvider({ children }:any) {
   const [selectedInstruments, setSelectedInstruments] = useState({});
   const [toastText, setToastText] = useState("");
-  const [config, setConfig] = useState({
-    minStrike: 10,
+  const [config, setConfig] = useState(()=>{ return {
+    minStrike: 5,
     liveMarket:true,
     minTimeValue: 10000
-  });
+  }});
   const { getItem, setItem } = useStorage();
 
   useEffect(() => {

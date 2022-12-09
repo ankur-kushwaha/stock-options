@@ -58,6 +58,8 @@ export const getServerSideProps = async (context:any) => {
     }
 
     const token = await fetchAccessToken(requestToken);
+    console.log(token);
+    
     if (token) {
       cookies.set(cookieName, token, {
         httpOnly: true // true by default
@@ -71,6 +73,14 @@ export const getServerSideProps = async (context:any) => {
       }
       // return 
     }
+  }else{
+    res.writeHead(301, { Location: `/instruments` });
+      res.end();
+      return {
+        props:{
+
+        }
+      }
   }
 
   return {

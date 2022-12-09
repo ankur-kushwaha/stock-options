@@ -11,8 +11,6 @@ export function Header(props: HeaderProps) {
     path = global.window?.location.pathname.substring(1);
   }
   
-  
-
   function handleLoginClick() {
     // https://kite.zerodha.com/connect/login?v=3&api_key=xxx
     window.location.href = `https://kite.zerodha.com/connect/login?v=3&api_key=ab8oz67ryftv7gx9`;
@@ -39,26 +37,12 @@ export function Header(props: HeaderProps) {
           <div className="mr-2">
             <a href="/login"><Button>Login</Button></a>
           </div>
-          <div>
-            <Settings />
-          </div>
           <Navbar.Toggle />
         </div>
         <Navbar.Collapse>
-          <Navbar.Link active={path == ''}
-            href="/navbars"
-          >
-            Home
-          </Navbar.Link>
-          <Navbar.Link href="/positions">
-            Positions
-          </Navbar.Link>
-          <Navbar.Link href="/holdings">
-            Holdings
-          </Navbar.Link>
-          <Navbar.Link href="/instruments">
+          {/* <Navbar.Link href="/instruments">
             Instruments
-          </Navbar.Link>
+          </Navbar.Link> */}
         </Navbar.Collapse>
       </Navbar>
 

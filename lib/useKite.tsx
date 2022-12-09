@@ -1,8 +1,8 @@
 //@ts-nocheck 
-export function useKite({stockQuotes,config}:any){
+export function useKite({ stockQuotes, config }: any) {
 
-  async function fetchQuotes(tradingsymbols:any, exchange = 'NFO') {
-    tradingsymbols = tradingsymbols.map((item:any) => `i=${exchange}:${item}`).join("&")
+  async function fetchQuotes(tradingsymbols: any, exchange = 'NFO') {
+    tradingsymbols = tradingsymbols.map((item: any) => `i=${exchange}:${item}`).join("&")
     const res = await fetch("/api/kiteConnect?api=quote", {
       method: "POST",
       body: JSON.stringify({
@@ -13,42 +13,42 @@ export function useKite({stockQuotes,config}:any){
   }
 
 
-  async function getInstruments({ stockCode,singleOption }:any) {
+  async function getInstruments({ stockCode, singleOption }: any) {
 
-    let code=stockCode;
-    
-    if(stockCode=="NIFTY 50"){ 
+    let code = stockCode;
+
+    if (stockCode == "NIFTY 50") {
       code = 'NIFTY'
     }
 
-    if(stockCode=="NIFTY BANK"){
+    if (stockCode == "NIFTY BANK") {
       code = 'BANKNIFTY'
     }
-        
+
     const res = await fetch("/api/options?name=" + (code)).then(res => res.json())
-    let options = res.data.filter((item:any) => {
+    let options = res.data.filter((item: any) => {
       const stockPrice = stockQuotes.current[stockCode]?.last_price;
-      if(!stockPrice){
+      if (!stockPrice) {
         return false;
       }
       item.strikeDiff = item.strike - stockPrice;
       item.strikeDiffPct = ((item.strikeDiff / stockPrice) * 100).toFixed(2)
-    
+
       return item.instrument_type == 'PE' && item.strike < stockPrice && (-item.strikeDiffPct > config.minStrike);
     })
-    
-    
-    if(options.length>200){
-      options = options.sort((a,b)=>b.strike-a.strike);
-      options.length=200;
+
+
+    if (options.length > 200) {
+      options = options.sort((a, b) => b.strike - a.strike);
+      options.length = 200;
     }
-    
+
     const tradingsymbols = options.map(item => item.tradingsymbol);
-    
+
     const quotes = await fetchQuotes(tradingsymbols)
-    
-    options = options.filter(item=>quotes[`${item.exchange}:${item.tradingsymbol}`]).map(item => {
-      let optionBuyPrice,optionSellPrice;
+
+    options = options.filter(item => quotes[`${item.exchange}:${item.tradingsymbol}`]).map(item => {
+      let optionBuyPrice, optionSellPrice;
       item.quote = quotes[`${item.exchange}:${item.tradingsymbol}`]
       if (config.liveMarket) {
         optionBuyPrice = item.quote.depth.buy[0].price;
@@ -60,23 +60,23 @@ export function useKite({stockQuotes,config}:any){
       item.price = optionBuyPrice;
       item.sellPrice = optionSellPrice
       // item.strikeDiff = item.strike - stockQuotes.current[stockCode];
-    
+
       if (item.strikeDiff < 0) {
         item.timeValue = optionBuyPrice * item.lot_size;
       }
       // item.strikeDiffPct = ((item.strikeDiff / stockQuotes.current[stockCode]) * 100).toFixed(2)
       return item;
-    }).filter(item => item.price > 0 
-          && item.timeValue > config.minTimeValue
+    }).filter(item => item.price > 0
+      && item.timeValue > config.minTimeValue
     )
-    
-    if(options.length==0){
+
+    if (options.length == 0) {
       return [];
     }
-    if(singleOption){
-      return [options.sort((a,b)=>b.timeValue-a.timeValue)[0]]
+    if (singleOption) {
+      return [options.sort((a, b) => b.timeValue - a.timeValue)[0]]
     }
-    
+
     return options;
   }
 
@@ -92,25 +92,56 @@ export function useKite({stockQuotes,config}:any){
 
   async function fetchStockQuotes(instruments) {
     const tradingsymbols = getSelectedInstruments(instruments)
-    if(tradingsymbols.length == 0){
+    if (tradingsymbols.length == 0) {
       return;
     }
     const quotes = await fetchQuotes(tradingsymbols, 'NSE');
-        
-    stockQuotes.current = tradingsymbols.reduce((a, b) => {
+    console.log(quotes);
+    
+   stockQuotes.current = tradingsymbols.reduce((a, b) => {
 
       a[b] = quotes[`NSE:${b}`];
-      if(a[b]){
+      if (a[b]) {
         const ohlc = a[b].ohlc;
-        a[b].change = ((a[b].last_price-ohlc.close)/ohlc.close*100).toFixed(2)
+        a[b].change = ((a[b].last_price - ohlc.close) / ohlc.close * 100).toFixed(2)
       }
-      
+
       return a;
     }, {})
   }
 
-      
+
+  async function getMargin({
+    tradingsymbol,lotSize,price
+  }) {
+    const res = await fetch("/api/kiteConnect?api=margins/basket?consider_positions=false", {
+      method: "POST",
+      body: JSON.stringify({
+        method:"POST",
+        body: [
+          {
+            "exchange": "NFO",
+            "tradingsymbol": tradingsymbol,
+            "transaction_type": "SELL",
+            "variety": "regular",
+            "product": "NRML",
+            "order_type": "LIMIT",
+            "quantity":lotSize,
+            "price": price,
+            "trigger_price": 0
+          }
+        ]
+      })
+    }).then(res => res.json()).then((data)=>{
+      return data.response.data.initial;
+    })
+    console.log(res);
+    return res;
+  }
+
+
   return {
+    getMargin,
     fetchStockQuotes,
     getInstruments,
     fetchQuotes

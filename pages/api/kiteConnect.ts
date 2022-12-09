@@ -4,18 +4,44 @@ import { NextApiRequest } from "next";
 
 export default async function handler(req: NextApiRequest, res:any) {
   const { api } = req.query
-  const {queryParam} = JSON.parse(req.body);
+  const {queryParam,body,method} = JSON.parse(req.body);
   const cookies = new Cookies(req, res)
   // console.log('url',`https://api.kite.trade/${api}?${queryParam}`);
-  
-  const response = await fetch(`https://api.kite.trade/${api}?${queryParam}`, {
-    headers: {
-      Authorization: `token ${API_KEY}:${cookies.get(cookieName)}`,
-      "X-Kite-Version": "3"
-    }
-  }).then(res => res.json())
+  let response,url;
+  if(method == 'POST'){
+    url = `https://api.kite.trade/${api}`
+    // console.log(body);
+    
 
-  res.status(200).json({ response: response })
+    response = await fetch(url, {
+      body:JSON.stringify(body),
+      method:"POST",
+      headers: {
+        Authorization: `token ${API_KEY}:${cookies.get(cookieName)}`,
+        "X-Kite-Version": "3"
+      }
+    }).then(res => res.json())
+
+  }else{
+
+    url = `https://api.kite.trade/${api}?${queryParam}`
+    response = await fetch(url, {
+      headers: {
+        Authorization: `token ${API_KEY}:${cookies.get(cookieName)}`,
+        "X-Kite-Version": "3"
+      }
+    }).then(res => res.json())
+  }
+
+  res.status(200).json({ 
+    request:{
+      url,
+      method,
+      body,
+      queryParam
+    },
+    response: response 
+  })
 }
 
 export const config = {
