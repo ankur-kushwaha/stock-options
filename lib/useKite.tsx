@@ -9,7 +9,11 @@ export function useKite({ stockQuotes, config }: any) {
         queryParam: tradingsymbols
       })
     }).then(res => res.json())
-    return res.response.data;
+    .catch((err)=>{
+      console.error(err);
+      return {}
+    })
+    return res.response?.data||{};
   }
 
 
@@ -96,18 +100,16 @@ export function useKite({ stockQuotes, config }: any) {
       return;
     }
     const quotes = await fetchQuotes(tradingsymbols, 'NSE');
-    console.log(quotes);
     
    stockQuotes.current = tradingsymbols.reduce((a, b) => {
-
       a[b] = quotes[`NSE:${b}`];
       if (a[b]) {
         const ohlc = a[b].ohlc;
         a[b].change = ((a[b].last_price - ohlc.close) / ohlc.close * 100).toFixed(2)
       }
-
       return a;
     }, {})
+    return stockQuotes.current;
   }
 
 
@@ -135,7 +137,6 @@ export function useKite({ stockQuotes, config }: any) {
     }).then(res => res.json()).then((data)=>{
       return data.response.data.initial;
     })
-    console.log(res);
     return res;
   }
 
