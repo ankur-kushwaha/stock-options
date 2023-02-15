@@ -5,6 +5,7 @@ import AppFooter from '../components/footer';
 import Header from '../components/header/header';
 import { AppProvider } from '../lib/AppContext';
 import './styles.css';
+import '../styles/globals.css'
 
 function CustomApp({ Component, pageProps }: AppProps) {
   return (

@@ -68,7 +68,7 @@ export interface Option {
 }
 
 const minProfit1L = 7000;
-const minDiffPct = 10;
+const minDiffPct = 5;
 
 export default function Instruments({ positions }: any) {
   const stockQuotes = useRef<Record<string, any>>({});
@@ -247,8 +247,8 @@ export default function Instruments({ positions }: any) {
 
   return (
 
-    <div className="relative overflow-x-auto">
-      <ReactTable<Option> columns={columns} data={table}></ReactTable>
+    <div className="relative overflow-x-auto">    
+      <ReactTable<Option> columns={columns} data={table.sort((a,b)=>b.score-a.score)}></ReactTable>
     </div>
 
   )
