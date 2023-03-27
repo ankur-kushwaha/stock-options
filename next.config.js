@@ -6,7 +6,7 @@ const nextConfig = {
     return [
       {
         source: '/login',
-        destination: `https://kite.zerodha.com/connect/login?v=3&api_key=ab8oz67ryftv7gx9&redirect_params=env%3D${process.env.NODE_ENV}`,
+        destination: `https://smartapi.angelbroking.com/publisher-login?api_key=${process.env.SMARTAPI_KEY}`,
         permanent: true,
       },
     ]

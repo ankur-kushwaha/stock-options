@@ -1,227 +1,95 @@
-// @ts-nocheck
-import { GetServerSideProps } from 'next'
-import React, { useContext, useEffect, useRef } from 'react'
-import { AppContext } from '../lib/AppContext';
-import InstrumentSidebar from '../components/instrument-sidebar';
-import { ReactTable } from '../components/ReactTable';
-import { useKite } from '../lib/useKite';
-import { useToast } from '../lib/useToast';
-import { useRouter } from 'next/router'
 import { Button } from 'flowbite-react';
-
-
-type Option = {
-  expiry: string;
-  tradingsymbol: string;
-  strikeDiffPct: string;
-  lot_size: string;
-  price: string;
-  sellPrice: string;
-  timeValue: string;
-}
+import { GetServerSideProps } from 'next'
+import React, { useEffect, useState } from 'react'
+import { ReactTable } from '../components/ReactTable';
+import { db, Instrument } from '../lib/db';
 
 export default function Instruments({ positions }: any) {
-  const [options, setOptions] = React.useState<Option[]>([]);
-  const stockQuotes = useRef({});
-  const { selectedInstruments, config, setSelectedInstruments } = useContext(AppContext);
-  const { getInstruments, fetchStockQuotes, getMargin } = useKite({ config, stockQuotes });
-  const { showToast } = useToast();
-  const { query } = useRouter()
-  const { stock } = query;
-  const [fetchState, setFetchState] = React.useState();
 
-  useEffect(() => {
-    if (stock && typeof stock == 'string') {
-      setSelectedInstruments?.(
-        {
-          [stock]: true
-        }
-      )
+  const [filteredInstruments,setInstruments] = useState<Instrument[]>([]);
 
-      loadIndex({
-        [stock]: true
+  async function loadInstruments() {
+    console.log('cleaning...');
+    
+    await cleanDb()
+    console.log('fetching...');
+    await fetch('https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json')
+      .then(res => res.json())
+      .then(async res => {
+        console.log('Saving...');
+        const id = await db.instruments.bulkAdd(res);
+      }).catch(e=>{
+        console.error(e);
       })
-
-    }
-  }, [stock])
-
-
-  useEffect(() => {
-    fetchStockQuotes(selectedInstruments);
-  }, [selectedInstruments])
-
-  async function loadIndex(passedInstruments?: any) {
-    const instruments = passedInstruments || selectedInstruments;
-    setOptions([]);
-
-    const promiseArr = []
-
-    for (const stockCode of Object.keys(instruments)) {
-      if (instruments[stockCode]) {
-        promiseArr.push(getInstruments({
-          stockCode: stockCode,
-          singleOption: config.singleOption
-        }))
-      }
-    }
-
-    const output = await Promise.all(promiseArr);
-
-    const out = output.flat().sort((a, b) => b.timeValue - a.timeValue);
-    setOptions(out);
+      console.log('Done');
   }
 
-  async function getAllOptions({ mode }) {
+  async function queryInstrument() {
+    let currentPrice = 1800;
+    let targetStrPrice= currentPrice - 10*currentPrice/100;
+    const someFriends = await db.instruments
+      .where("name").equals('ADANIENT')
+      .and(instrument=>instrument.exch_seg=='NFO' && instrument.symbol.endsWith('PE') && (Number(instrument.strike)/100) < targetStrPrice)
+      .toArray();
 
-    setFetchState("FETCHING")
-
-    showToast("Getting all options")
-    setOptions([]);
-
-    let response;
-    if (mode == 'ALL') {
-      response = (await fetch('/api/option-instruments').then(res => res.json())).data;
-    } else {
-      response = ["ADANIENT", "LALPATHLAB", "ZEEL", "GNFC", "ADANIPORTS", "IDFCFIRSTB", "IDEA", "BAJFINANCE", "IBULHSGFIN", "IRCTC", "PVR", "HAL", "TATAMOTORS", "GMRINFRA", "PNB"];
-    }
-
-    await fetchStockQuotes(response.reduce((a, b) => {
-      a[b] = true
-      return a;
-    }, {}));
-
-    for (const instrument of response) {
-      showToast("Fetching " + instrument)
-
-      const option = await getInstruments({
-        stockCode: instrument,
-        singleOption: true
-      });
-
-      setOptions(options => [...options, ...option].sort((a, b) => b.timeValue - a.timeValue))
-    }
-    setFetchState("FETCHED")
-  }
-
-  useEffect(() => {
-    if (fetchState == 'FETCHED') {
-      handleClickGetMargins();
-    }
-  }, [fetchState])
-
-  function loadAllStocks() {
-    getAllOptions({
-      mode: "ALL"
-    })
-  }
-
-  async function loadSelectedStocks() {
-    await getAllOptions({ mode: "SELECTED" })
-  }
-
-
-  async function handleClickGetMargins() {
-    for (let option of options) {
-      let margin = await getMargin({
-        tradingsymbol: option.tradingsymbol,
-        lotSize: option.lot_size,
-        price: option.price
-      }).then(res => res.total)
-      option.margin = margin.toFixed(2);
-      option.absoluteTimeValue = (option.timeValue * 100 / option.margin).toFixed(2)
-      option.timeValue = option.timeValue.toFixed(2)
-    }
-    setOptions([...options])
+    // console.log(someFriends.map(item=>({...item,strike:(Number(item.strike)/100)})));
+    let data= someFriends
+    console.log(data);
+    
+    setInstruments(data)
 
   }
 
+  async function cleanDb() {
+    let res = await db.instruments.where("name").notEqual('abc').delete()
+    console.log(res);
+  }
 
-  const columns = React.useMemo(() => {
-    return [
+  async function getAllStocks(){
+    const stocks = await db.instruments
+      .where("exch_seg").equals('NSE')
+      .and(item=>item.name+"-EQ" == item.symbol)
+      .toArray();
+    console.table(stocks);
+    
+      
+  }
+
+
+  const columns = React.useMemo(
+    () => [
       {
         Header: 'Instrument',
-        accessor: 'tradingsymbol', // accessor is the "key" in the data
-        Cell: ({ row }) => {
-          const position = row.original;
-
-          return (
-            <div>
-              <a href={`https://kite.zerodha.com/chart/ext/ciq/${position.segment}/${position.tradingsymbol}/${position.instrument_token}`} target={'_blank'} rel="noreferrer">
-                {position.tradingsymbol}
-              </a>
-              <br />
-              <a href={"/instruments?stock=" + position.name} className='text-xs text-blue-600'>View all</a>
-            </div>
-          )
-        }
-      },
-      {
-        Header: 'Stock',
-        accessor: 'stock',
-        Cell: ({ row }) => {
-          const position = row.original;
-          return (<a href={`https://kite.zerodha.com/chart/ext/ciq/NSE/${position.name}/${stockQuotes.current[position.name]?.instrument_token}`} target={'_blank'} rel="noreferrer">
-            {position.name}
-            <br />
-            ₹<span className='text-xs'>{stockQuotes.current[position.name]?.last_price}</span>
-            &nbsp;<span className={`text-xs ${(stockQuotes.current[position.name]?.change < 0 ? 'text-red-600' : 'text-green-600')}`}>({stockQuotes.current[position.name]?.change})</span>
-          </a>)
-        }
+        accessor: 'symbol', // accessor is the "key" in the data
       },
       {
         Header: 'Expiry',
         accessor: 'expiry', // accessor is the "key" in the data
       },
       {
-        Header: 'Strike Diff',
-        accessor: 'strikeDiffPct', // accessor is the "key" in the data
+        Header: 'lotsize',
+        accessor: 'lotsize', // accessor is the "key" in the data
       },
       {
-        Header: 'Lot Size',
-        accessor: 'lot_size', // accessor is the "key" in the data
+        Header: 'Stock',
+        accessor: 'name', // accessor is the "key" in the data
       },
       {
-        Header: 'Buy',
-        accessor: 'price', // accessor is the "key" in the data
+        Header: 'strike',
+        accessor: 'strike', // accessor is the "key" in the data
       },
-      {
-        Header: 'Sell',
-        accessor: 'sellPrice', // accessor is the "key" in the data
-      },
-      {
-        Header: 'Time Value',
-        accessor: 'timeValue', // accessor is the "key" in the data
-      },
-      {
-        Header: 'Margin ratio',
-        accessor: 'absoluteTimeValue'
-      },
-      {
-        Header: 'Margin',
-        accessor: 'margin'
-      },
-    ]
-  }, [])
-
-  return (
-    <div className="card mt-4 mx-auto max-w-screen-xl	">
-      <>
-        <div className='flex flex-row gap-4 mb-4'>
-          <Button onClick={loadAllStocks}>Load all</Button>
-          <Button onClick={loadSelectedStocks}>Load selected</Button>
-          <Button onClick={() => loadIndex()}>Load Index</Button>
-        </div>
-        <div className="flex lg:flex-row flex-col">
-          <div className='w-full lg:w-1/3'>
-            <InstrumentSidebar />
-          </div>
-          <div className='w-full lg:pl-6'>
-            <ReactTable<Option> columns={columns} data={options}></ReactTable>
-          </div>
-        </div>
-      </>
-    </div>
+    ],
+    []
   )
+
+
+  return <>
+    <Button onClick={getAllStocks}>Get all</Button>
+    <Button onClick={loadInstruments}>Load all</Button>
+    <Button onClick={queryInstrument}>Query DB</Button>
+    <ReactTable columns={columns} data={filteredInstruments}></ReactTable>
+
+  </>
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
