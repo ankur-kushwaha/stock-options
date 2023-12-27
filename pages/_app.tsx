@@ -14,7 +14,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
         <title>Stock-options</title>
       </Head>
       <AppProvider>
-        <main className="app">
+        <main className="">
           <Header />
           <Component {...pageProps} />
         </main>
