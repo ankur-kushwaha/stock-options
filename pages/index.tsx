@@ -37,6 +37,7 @@ export function Index() {
     if(stocks.length === 0){
       stocks = defaultStocks;
     }
+    window.localStorage.setItem('stocks', JSON.stringify(stocks));
     setStocks(stocks);
   },[])
 

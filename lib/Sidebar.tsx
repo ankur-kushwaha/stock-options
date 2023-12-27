@@ -23,14 +23,25 @@ export function SidebarComponent(props: {
     }
   }
 
+  function deleteItem(item:any){
+    let stocks = JSON.parse(window.localStorage.getItem('stocks') || '[]');
+    stocks.splice(item, 1);
+    window.localStorage.setItem('stocks', JSON.stringify(stocks));
+    props.setStocks(stocks);
+  }
+
   return (
     <Sidebar aria-label="Default sidebar example">
       <Sidebar.Items>
         <Sidebar.ItemGroup>
 
           {props.stocks.map(stock => {
-            return <Sidebar.Item href="#" icon={HiChartPie}>
+            return <Sidebar.Item href="#" icon={HiChartPie} >
+              <div className='flex justify-between'>
               {stock.stockCode}
+              <button className='text-red-900' onClick={()=>deleteItem(stock)}>X</button>
+              </div>
+              
             </Sidebar.Item>
           })}
 
